@@ -7,7 +7,7 @@
 ::     - If you want to detect one of the blacklisted people that are connecting
 ::     or connected to your session. (Even if they have an other
 ::     username in the game. (At the condition that they still have
-::     the same IP than the BLACKLISTED.txt given IP.)
+::     the same IP than the 'Blacklist.ini' given IP.)
 ::     - If one of the blacklisted people are not in your session but that
 ::     they tries to join it, you will detect them before they will be there.
 ::
@@ -36,30 +36,30 @@ cls
 >nul chcp 65001
 setlocal DisableDelayedExpansion
 pushd "%~dp0"
-set "@MSGBOX=(if not exist "msgbox.vbs" (call :MSGBOX_GENERATION)) & "
+set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
 set "@ADMINISTRATOR_MANIFEST_REQUIRED=(mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '?' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
 setlocal EnableDelayedExpansion
-set TITLE=PS3 Blacklist Sniffer
+set TITLE=PS3 Blacklist Sniffer v1.1
 title !TITLE!
 (set \N=^
 %=leave unchanged=%
 )
 if defined ProgramFiles(x86) (
-    set "PATH=!PATH!;Curl\x64"
+    set "PATH=!PATH!;lib\Curl\x64"
 ) else (
-    set "PATH=!PATH!;Curl\x32"
+    set "PATH=!PATH!;lib\Curl\x32"
 )
 >nul 2>&1 sc query npcap || (
     >nul 2>&1 sc query npf || (
-        %@MSGBOX% cscript //nologo "msgbox.vbs" "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE!"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE!"
         start "" "https://nmap.org/npcap/"
         exit
     )
 )
 for %%A in ("ARP.EXE" "curl.exe") do (
     >nul 2>&1 where "%%~A" || (
-        %@MSGBOX% cscript //nologo "msgbox.vbs" "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE!"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE!"
         exit
     )
 )
@@ -424,7 +424,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
             if not defined hexadecimal_psn_%%~A (
                 if not defined invalid_psn_%%~A (
                     set "blacklisted_psn=%%~A"
-                    call :DEC_TO_HEX || (
+                    call :ASCII_TO_HEXADECIMAL || (
                         set "invalid_psn_%%~A=true"
                         echo Blacklisted user ["!blacklisted_psn!"] is not a valid PSN username.
                     )
@@ -440,7 +440,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
     echo:
     echo Unable to perform the username search for this PSN username^(s^) in your 'Blacklist.ini' file.
     echo Please ensure the username is correct, and check for the following errors:
-    echo PSN usernames must consist of 6-16 characters, and only contain: [a-z] [A-Z] [0-9] [-] [_]
+    echo PSN usernames must consist of 3-16 characters, and only contain: [a-z] [A-Z] [0-9] [-] [_]
     echo:
 )
 :WAIT_FILE_SAVED_WINDOWS_BLACKLIST_PATH
@@ -451,8 +451,8 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
         )
     )
     if not defined notepad_pid (
-        %@MSGBOX% cscript //nologo "msgbox.vbs" "!TITLE! could not find any valid users in your 'Blacklist.ini' file.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE!"
-        start /max "" "Blacklist.ini"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find any valid users in your 'Blacklist.ini' file.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE!"
+        start "" "Blacklist.ini"
         for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq notepad.exe" ^| find /i "notepad.exe"') do (
             set "notepad_pid=%%~A"
         )
@@ -485,7 +485,7 @@ if defined CAPTURE_FILTER (
 for /l %%. in () do (
     if exist "!WINDOWS_TSHARK_PATH!" (
         if exist "!WINDOWS_BLACKLIST_PATH!" (
-            for /f "tokens=1-8" %%A in ('^"%@WINDOWS_TSHARK_STDERR%"!WINDOWS_TSHARK_PATH!" -q -Q -i !CAPTURE_INTERFACE! -f "!CAPTURE_FILTER!" -Y frame.len^^^^^<^=1160 -Tfields -Eseparator^=/s -e ip.src_host -e ip.src -e udp.srcport -e ip.dst_host -e ip.dst -e udp.dstport -e data -e frame.len -a duration:1^"') do (
+            for /f "tokens=1-8" %%A in ('^"%@WINDOWS_TSHARK_STDERR%"!WINDOWS_TSHARK_PATH!" -q -Q -i !CAPTURE_INTERFACE! -f "!CAPTURE_FILTER!" -Y "frame.len^>^=68 && frame.len^<^=1160"  -Tfields -Eseparator^=/s -e ip.src_host -e ip.src -e udp.srcport -e ip.dst_host -e ip.dst -e udp.dstport -e data -e frame.len -a duration:1^"') do (
                 if not "%%~A"=="" (
                     if not "%%~B"=="" (
                         if not "%%~C"=="" (
@@ -520,7 +520,7 @@ for /l %%. in () do (
             call :CREATE_WINDOWS_BLACKLIST_FILE
         )
     ) else (
-        %@MSGBOX% cscript //nologo "msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' PATH on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' PATH on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
         exit
     )
 )
@@ -557,8 +557,9 @@ for /f "usebackqtokens=1*delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         for %%C in (136 1160) do (
             if "%%~C"=="%frame_len%" (
                 if not defined hexadecimal_psn_%%~A (
-                    call :DEC_TO_HEX || (
+                    call :ASCII_TO_HEXADECIMAL || (
                         set "invalid_psn_%%~A=true"
+                        exit /b 1
                     )
                 )
                 for %%D in ("!hexadecimal_psn_%%~A!") do (
@@ -616,7 +617,7 @@ if %WINDOWS_NOTIFICATIONS%==true (
         )
         if !windows_notifications_%ip%_seconds! geq %WINDOWS_NOTIFICATIONS_TIMER% (
             set windows_notifications_%ip%_t1=
-            %@MSGBOX% start /b cscript //nologo "msgbox.vbs" "#### Blacklisted user detected at !hourtime:~0,5! ####!\N!!\N!User: %blacklisted_psn%!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !iplookup_countrycode_%ip%!!\N!!\N!############ IP Lookup #############!\N!!\N!Reverse IP: !iplookup_reverse_%ip%!!\N!Continent: !iplookup_continent_%ip%!!\N!Country: !iplookup_country_%ip%!!\N!City: !iplookup_city_%ip%!!\N!Organization: !iplookup_org_%ip%!!\N!ISP: !iplookup_isp_%ip%!!\N!AS: !iplookup_as_%ip%!!\N!AS Name: !iplookup_asname_%ip%!!\N!Proxy: !iplookup_proxy_2_%ip%!!\N!Type: !iplookup_type_%ip%!!\N!Mobile (cellular) connection: !iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !iplookup_hosting_%ip%!" 69680 "!TITLE!"
+            %@MSGBOX% start /b cscript //nologo "lib\msgbox.vbs" "#### Blacklisted user detected at !hourtime:~0,5! ####!\N!!\N!User: %blacklisted_psn%!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !iplookup_countrycode_%ip%!!\N!!\N!############ IP Lookup #############!\N!!\N!Reverse IP: !iplookup_reverse_%ip%!!\N!Continent: !iplookup_continent_%ip%!!\N!Country: !iplookup_country_%ip%!!\N!City: !iplookup_city_%ip%!!\N!Organization: !iplookup_org_%ip%!!\N!ISP: !iplookup_isp_%ip%!!\N!AS: !iplookup_as_%ip%!!\N!AS Name: !iplookup_asname_%ip%!!\N!Proxy: !iplookup_proxy_2_%ip%!!\N!Type: !iplookup_type_%ip%!!\N!Mobile (cellular) connection: !iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !iplookup_hosting_%ip%!" 69680 "!TITLE!"
             if not defined windows_notifications_%ip%_t1 (
                 call :TIMER_T1 windows_notifications_%ip%
             )
@@ -656,7 +657,7 @@ if defined PS3_IP_ADDRESS (
                                 set @PS3_NOTIFICATIONS_ABOVE_SOUND=
                             )
                         )
-                        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
+                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
                     )
                     if not defined ps3_notifications_above_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_above_%ip%
@@ -685,9 +686,9 @@ if defined PS3_IP_ADDRESS (
                 )
                 if !ps3_notifications_bottum_%ip%_seconds! geq %PS3_NOTIFICATIONS_BOTTUM_TIMER% (
                     set ps3_notifications_bottum_%ip%_t1=
-                    >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/popup.ps3*Blacklisted+user+%%5B%blacklisted_psn%%%5D+connected..."
+                    >nul curl -fkLs "http://%PS3_IP_ADDRESS%/popup.ps3*Blacklisted+user+%%5B%blacklisted_psn%%%5D+connected..."
                     if not %PS3_NOTIFICATIONS_BOTTUM_SOUND%==false (
-                        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTUM_SOUND%"
+                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTUM_SOUND%"
                     )
                     if not defined ps3_notifications_bottum_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_bottum_%ip%
@@ -707,19 +708,36 @@ exit /b
 for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "%1_t2=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100, %1_tDiff=%1_t2-%1_t1, %1_tDiff+=((~(%1_tDiff&(1<<31))>>31)+1)*8640000, %1_seconds=%1_tDiff/100"
 exit /b
 
-:DEC_TO_HEX
+:ASCII_TO_HEXADECIMAL
 if not "%blacklisted_psn:~16%"=="" (
     exit /b 1
 )
-if "%blacklisted_psn:~4%"=="" (
+if "%blacklisted_psn:~2%"=="" (
     exit /b 1
 )
 for /f "delims=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_" %%A in ("%blacklisted_psn%") do (
     exit /b 1
 )
-set "decimal_psn=%blacklisted_psn%"
-:_DEC_TO_HEX
-if defined decimal_psn (
+if not defined hexadecimal_psn_%blacklisted_psn% (
+    if exist "lib\tmp\hexadecimal_psn" (
+        for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\hexadecimal_psn") do (
+            set first_6=1
+            if defined first_6 (
+                if "%%~A"=="%blacklisted_psn%" (
+                    set first_6=
+                    set "hexadecimal_psn_%blacklisted_psn%=%%~B"
+                    call :CHECK_HEXADECIMAL_PSN && (
+                        exit /b 0
+                    )
+                )
+            )
+        )
+    )
+)
+set "hexadecimal_psn_%blacklisted_psn%="
+set "ascii_psn=%blacklisted_psn%"
+:_ASCII_TO_HEXADECIMAL
+if defined ascii_psn (
     for %%A in (
         "0`30"
         "1`31"
@@ -787,18 +805,38 @@ if defined decimal_psn (
         "_`5F"
     ) do (
         for /f "tokens=1,2delims=`" %%B in ("%%~A") do (
-            if "!decimal_psn:~0,1!"=="%%~B" (
+            if "!ascii_psn:~0,1!"=="%%~B" (
                 set "hexadecimal_psn_%blacklisted_psn%=!hexadecimal_psn_%blacklisted_psn%!%%~C"
             )
         )
     )
-    set "decimal_psn=!decimal_psn:~1!"
-    goto :_DEC_TO_HEX
+    set "ascii_psn=!ascii_psn:~1!"
+    goto :_ASCII_TO_HEXADECIMAL
+)
+for %%A in ("lib\tmp\hexadecimal_psn") do (
+    if not exist "%%~dpA" (
+        md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\%
+    )
+    >>"%%~A" (
+        echo %blacklisted_psn%=!hexadecimal_psn_%blacklisted_psn%!
+    ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\hexadecimal_psn%
+)
+exit /b 0
+
+:CHECK_HEXADECIMAL_PSN
+if not "!hexadecimal_psn_%blacklisted_psn%:~32!"=="" (
+    exit /b 1
+)
+if "!hexadecimal_psn_%blacklisted_psn%:~5!"=="" (
+    exit /b 1
+)
+for /f "delims=0123456789ABCDEFabcdef" %%A in ("!hexadecimal_psn_%blacklisted_psn%!") do (
+    exit /b 1
 )
 exit /b 0
 
 :IPLOOKUP
-for /f "tokens=1,2delims=</" %%A in ('curl.exe -fkLs "http://ip-api.com/xml/%ip%?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"') do (
+for /f "tokens=1,2delims=</" %%A in ('curl -fkLs "http://ip-api.com/xml/%ip%?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"') do (
     set "x=%%~A%%~B"
     set "x=!x:~2!"
     for /f "tokens=1,2delims=>" %%C in ("!x!") do (
@@ -855,7 +893,7 @@ for /f "tokens=1,2delims=</" %%A in ('curl.exe -fkLs "http://ip-api.com/xml/%ip%
         )
     )
 )
-for /f "tokens=1,2delims=:" %%A in ('curl.exe -fkLs "https://proxycheck.io/v2/%ip%?vpn=1&port=1"') do (
+for /f "tokens=1,2delims=:" %%A in ('curl -fkLs "https://proxycheck.io/v2/%ip%?vpn=1&port=1"') do (
     set "x=%%~A:%%~B"
     set "x=!x:"=!"
     if "!x:~-1!"=="," (
@@ -872,7 +910,7 @@ for /f "tokens=1,2delims=:" %%A in ('curl.exe -fkLs "https://proxycheck.io/v2/%i
     )
 )
 call :CHECK_COUNTRYCODE || (
-    for /f "tokens=1,2delims=:, " %%A in ('curl.exe -fkLs "https://ipinfo.io/%ip%/json"') do (
+    for /f "tokens=1,2delims=:, " %%A in ('curl -fkLs "https://ipinfo.io/%ip%/json"') do (
         if /i "%%~A"=="country" (
             set "iplookup_countrycode_%ip%=%%~B"
             call :CHECK_COUNTRYCODE && (
@@ -925,7 +963,7 @@ call :GET_WINDOWS_TSHARK_PATH && (
     set generate_new_settings_file=true
     exit /b
 )
-%@MSGBOX% cscript //nologo "msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' PATH on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
+%@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' PATH on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
 start "" "https://www.wireshark.org/#download"
 if exist "Settings.ini" (
     start "" "Settings.ini"
@@ -1107,7 +1145,7 @@ if !PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!==false (
 ) else (
     set "@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND=&snd=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!"
 )
-for /f %%A in ('curl.exe -fksw "%%{response_code}" "http://!%1!/notify.ps3mapi?msg=!TITLE: =+!+successfully+connected+to+your+PS3+console%%2E&icon=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!!@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!" -o NUL') do (
+for /f %%A in ('curl -fksw "%%{response_code}" "http://!%1!/notify.ps3mapi?msg=!TITLE: =+!+successfully+connected+to+your+PS3+console%%2E&icon=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!!@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!" -o NUL') do (
     if "%%~A"=="200" (
         set ps3_connected_notification=true
         set "PS3_IP_ADDRESS=!%1!"
@@ -1156,9 +1194,14 @@ if "!%1:~0,1!"=="0" (
 exit /b 0
 
 :MSGBOX_GENERATION
->"msgbox.vbs" (
-    echo MsgBox WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)
-) || %@ADMINISTRATOR_MANIFEST_REQUIRED:?=msgbox.vbs%
+for %%A in ("lib\msgbox.vbs") do (
+    if not exist "%%~dpA" (
+        md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\%
+    )
+    >"%%~A" (
+        echo MsgBox WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)
+    ) || %@ADMINISTRATOR_MANIFEST_REQUIRED:?=lib\msgbox.vbs%
+)
 exit /b
 
 :CHECK_PATH
