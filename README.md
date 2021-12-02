@@ -11,7 +11,7 @@ the same IP than the 'Blacklist.ini' given IP.)
 they tries to join it, you will detect them before they will be there.
 >
 *Requirements*:
-> Windows 8, 8.1, 10 (x86/x64)
+> Windows 8, 8.1, 10, 11 (x86/x64)
 >
 > Wireshark (with Npcap/Winpcap installed)
 >
