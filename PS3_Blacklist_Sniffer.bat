@@ -40,8 +40,8 @@ set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
 set "@ADMINISTRATOR_MANIFEST_REQUIRED=(mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '?' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
 setlocal EnableDelayedExpansion
-set "@BLACKLISTED_IPLOOKUP_LOOKUP=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`"
-set TITLE=PS3 Blacklist Sniffer v1.3
+set "@LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`"
+set TITLE=PS3 Blacklist Sniffer v1.4
 title !TITLE!
 (set \N=^
 %=leave unchanged=%
@@ -486,6 +486,11 @@ if defined CAPTURE_FILTER (
 for /l %%. in () do (
     if exist "!WINDOWS_TSHARK_PATH!" (
         if exist "!WINDOWS_BLACKLIST_PATH!" (
+            >nul 2>&1 set skip_packet_ && (
+                for /f "delims==" %%# in ('set skip_packet_') do (
+                    set "%%~#="
+                )
+            )
             for /f "tokens=1-8" %%A in ('^"%@WINDOWS_TSHARK_STDERR%"!WINDOWS_TSHARK_PATH!" -q -Q -i !CAPTURE_INTERFACE! -f "!CAPTURE_FILTER!" -Y "frame.len^>^=68 && frame.len^<^=1160"  -Tfields -Eseparator^=/s -e ip.src_host -e ip.src -e udp.srcport -e ip.dst_host -e ip.dst -e udp.dstport -e data -e frame.len -a duration:1^"') do (
                 if not "%%~A"=="" (
                     if not "%%~B"=="" (
@@ -501,12 +506,16 @@ for /l %%. in () do (
                                                     set "reverse_ip=%%~D"
                                                     set "ip=%%~E"
                                                     set "port=%%~F"
-                                                    call :BLACKLISTED_SEARCH
+                                                    if not "!skip_packet_%%~E!"=="true" (
+                                                        call :BLACKLISTED_SEARCH
+                                                    )
                                                 ) else (
                                                     set "reverse_ip=%%~A"
                                                     set "ip=%%~B"
                                                     set "port=%%~C"
-                                                    call :BLACKLISTED_SEARCH
+                                                    if not "!skip_packet_%%~B!"=="true" (
+                                                        call :BLACKLISTED_SEARCH
+                                                    )
                                                 )
                                             )
                                         )
@@ -530,78 +539,118 @@ exit /b
 :BLACKLISTED_SEARCH
 if "%ip:~0,8%"=="192.168." (
     set "local_ip_%ip%=true"
-    exit /b 1
+    exit /b 0
 ) else if "%ip:~0,3%"=="10." (
     set "local_ip_%ip%=true"
-    exit /b 1
+    exit /b 0
 ) else if "%ip:~0,4%"=="172." (
     for /l %%A in (16,1,31) do (
         if "%ip:~4,3%"=="%%~A." (
             set "local_ip_%ip%=true"
-            exit /b 1
+            exit /b 0
         )
     )
 )
-for /f "usebackqtokens=1*delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
+for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
     if not "%%~A"=="" (
         set "blacklisted_psn=%%~A"
         set "blacklisted_ip=%%~B"
         if defined blacklisted_ip (
-            if "%ip%"=="!blacklisted_ip!" (
+            if "%ip%"=="%%~B" (
                 call :BLACKLISTED_FOUND
                 exit /b 0
             )
         )
-        if defined invalid_psn_%%~A (
-            exit /b 1
-        )
-        for %%C in (136 1160) do (
-            if "%%~C"=="%frame_len%" (
-                if not defined blacklisted_hexadecimal_psn_%%~A (
-                    call :ASCII_TO_HEXADECIMAL || (
-                        set "invalid_psn_%%~A=true"
-                        exit /b 1
+        if not defined invalid_psn_%%~A (
+            for %%C in (136 1160) do (
+                if "%%~C"=="%frame_len%" (
+                    if not defined blacklisted_hexadecimal_psn_%%~A (
+                        call :ASCII_TO_HEXADECIMAL || (
+                            set "invalid_psn_%%~A=true"
+                        )
+                    )
+                    if not defined invalid_psn_%%~A (
+                        for %%D in ("!blacklisted_hexadecimal_psn_%%~A!") do (
+                            if not "!hexadecimal_packet:%%~D=!"=="%hexadecimal_packet%" (
+                                set create_user_in_blacklist=true
+                                call :BLACKLISTED_FOUND
+                                exit /b 0
+                            )
+                        )
                     )
                 )
-                for %%D in ("!blacklisted_hexadecimal_psn_%%~A!") do (
-                    if not "!hexadecimal_packet:%%~D=!"=="%hexadecimal_packet%" (
-                        call :BLACKLISTED_FOUND
-                        >nul findstr /bc:"%%~A=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
-                            >>"!WINDOWS_BLACKLIST_PATH!" (
-                                echo %%~A=%ip%
-                            ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+            )
+        )
+        if not "%%~B"=="" (
+            for /f "tokens=1-3delims=." %%C in ("%ip%") do (
+                set "dynamic_ip=%%~C.%%~D"
+            )
+            for /f "tokens=1-3delims=." %%C in ("%%~B") do (
+                set "blacklisted_dynamic_ip=%%~C.%%~D"
+            )
+            if "!dynamic_ip!"=="!blacklisted_dynamic_ip!" (
+                if not exist "lib\tmp\dynamic_iplookup_%ip%" (
+                    call :IPLOOKUP dynamic %ip%
+                )
+                if not exist "lib\tmp\blacklisted_iplookup_%%~B" (
+                    call :IPLOOKUP blacklisted %%~B
+                )
+                set dynamic_iplookup_dif=false
+                for /f "usebackqtokens=1,2delims==" %%C in ("lib\tmp\dynamic_iplookup_%ip%") do (
+                    for /f "usebackqtokens=1,2delims==" %%E in ("lib\tmp\blacklisted_iplookup_%%~B") do (
+                        if "%%~C"=="%%~E" (
+                            if not "%%~C%%~D"=="%%~E%%~F" (
+                                if not "%%~C"=="query" (
+                                    if not "%%~C"=="reverse" (
+                                        set dynamic_iplookup_dif=true
+                                    )
+                                )
+                            )
                         )
-                        exit /b 0
                     )
+                )
+                if !dynamic_iplookup_dif!==false (
+                    set create_user_in_blacklist=true
+                    call :BLACKLISTED_FOUND
+                    exit /b 0
                 )
             )
         )
     )
 )
+set "skip_packet_%ip%=true"
 exit /b 1
 
 :BLACKLISTED_FOUND
+if !create_user_in_blacklist!==true (
+    set create_user_in_blacklist=false
+    >nul findstr /bc:"%blacklisted_psn%=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
+        >>"!WINDOWS_BLACKLIST_PATH!" (
+            echo %blacklisted_psn%=%ip%
+        ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+    )
+)
 for /f "tokens=2delims==." %%A in ('wmic os get LocalDateTime /value') do (
     set "datetime=%%A"
     set "datetime=!datetime:~0,-10!-!datetime:~-10,2!-!datetime:~-8,2!_!datetime:~-6,2!-!datetime:~-4,2!-!datetime:~-2!"
     set "hourtime=!datetime:~11,2!:!datetime:~14,2!"
 )
 if not defined blacklisted_iplookup_%ip% (
-    call :IPLOOKUP
+    call :IPLOOKUP blacklisted %ip%
 )
-set blacklisted_psn_list_number=1
+set blacklisted_psn_list_counter=1
 set "@blacklisted_psn_list=[%blacklisted_psn%]"
 set "@ps3_blacklisted_psn_list=%%5B%blacklisted_psn%%%5D"
 for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
     if "%%~B"=="%ip%" (
         if "!@blacklisted_psn_list:[%%~A]=!"=="!@blacklisted_psn_list!" (
-            set /a blacklisted_psn_list_number+=1
+            set /a blacklisted_psn_list_counter+=1
             set "@blacklisted_psn_list=!@blacklisted_psn_list!, [%%~A]"
             set "@ps3_blacklisted_psn_list=!@ps3_blacklisted_psn_list!,+%%5B%%~A%%5D"
         )
     )
 )
-if !blacklisted_psn_list_number! gtr 1 (
+if !blacklisted_psn_list_counter! gtr 1 (
     set "@ps3_psn_plurial_asterisk=%%2A"
     set "@psn_plurial_asterisk=*"
 ) else (
@@ -861,14 +910,14 @@ for /f "delims=0123456789ABCDEFabcdef" %%A in ("!blacklisted_hexadecimal_psn_%bl
 exit /b 0
 
 :IPLOOKUP
-set "blacklisted_iplookup_%ip%=true"
-if exist "lib\tmp\blacklisted_iplookup_%ip%" (
-    for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_iplookup_%ip%") do (
+set "%1_iplookup_%2=true"
+if exist "lib\tmp\%1_iplookup_%2" (
+    for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\%1_iplookup_%2") do (
         set first_7=1
         if defined first_7 (
-            if /i not "!@BLACKLISTED_IPLOOKUP_LOOKUP:`%%~A`=!"=="!@BLACKLISTED_IPLOOKUP_LOOKUP!" (
+            if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~A`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
                 set first_7=
-                set "blacklisted_iplookup_%%~A_%ip%=%%~B"
+                set "%1_iplookup_%%~A_%2=%%~B"
             )
         )
     )
@@ -876,20 +925,20 @@ if exist "lib\tmp\blacklisted_iplookup_%ip%" (
         set first_7=
     )
 ) else (
-    for /f "tokens=1,2delims=</" %%A in ('curl -fkLs "http://ip-api.com/xml/%ip%?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"') do (
+    for /f "tokens=1,2delims=</" %%A in ('curl -fkLs "http://ip-api.com/xml/%2?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"') do (
         set "x=%%~A%%~B"
         set "x=!x:~2!"
         for /f "tokens=1,2delims=>" %%C in ("!x!") do (
             if not "%%~C"=="" (
                 if not "%%~D"=="" (
-                    if /i not "!@BLACKLISTED_IPLOOKUP_LOOKUP:`%%~C`=!"=="!@BLACKLISTED_IPLOOKUP_LOOKUP!" (
-                        set "blacklisted_iplookup_%%~C_%ip%=%%~D"
+                    if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~C`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
+                        set "%1_iplookup_%%~C_%2=%%~D"
                     )
                 )
             )
         )
     )
-    for /f "tokens=1,2delims=:" %%A in ('curl -fkLs "https://proxycheck.io/v2/%ip%?vpn=1&port=1"') do (
+    for /f "tokens=1,2delims=:" %%A in ('curl -fkLs "https://proxycheck.io/v2/%2?vpn=1&port=1"') do (
         set "x=%%~A:%%~B"
         set "x=!x:"=!"
         if "!x:~-1!"=="," (
@@ -901,8 +950,8 @@ if exist "lib\tmp\blacklisted_iplookup_%ip%" (
         for /f "tokens=1,2delims=: " %%C in ("!x!") do (
             if not "%%~C"=="" (
                 if not "%%~D"=="" (
-                    if /i not "!@BLACKLISTED_IPLOOKUP_LOOKUP:`%%~C`=!"=="!@BLACKLISTED_IPLOOKUP_LOOKUP!" (
-                        set "blacklisted_iplookup_%%~C_%ip%=%%~D"
+                    if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~C`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
+                        set "%1_iplookup_%%~C_%2=%%~D"
                     )
                 )
             )
@@ -913,21 +962,21 @@ if exist "lib\tmp\blacklisted_iplookup_%ip%" (
             md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\%
         )
     )
-    for %%A in (%@BLACKLISTED_IPLOOKUP_LOOKUP:`=,%) do (
-        if not defined blacklisted_iplookup_%%~A_%ip% (
-            set "blacklisted_iplookup_%%~A_%ip%=N/A"
+    for %%A in (%@LOOKUP_IPLOOKUP_FIELDS:`=,%) do (
+        if not defined %1_iplookup_%%~A_%2 (
+            set "%1_iplookup_%%~A_%2=N/A"
         )
-        >>"lib\tmp\blacklisted_iplookup_%ip%" (
-            echo %%~A=!blacklisted_iplookup_%%~A_%ip%!
+        >>"lib\tmp\%1_iplookup_%2" (
+            echo %%~A=!%1_iplookup_%%~A_%2!
         ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\blacklisted_iplookup%
     )
 )
-call :CHECK_COUNTRYCODE || (
-    for /f "tokens=1,2delims=:, " %%A in ('curl -fkLs "https://ipinfo.io/%ip%/json"') do (
+call :CHECK_COUNTRYCODE %1 %2 || (
+    for /f "tokens=1,2delims=:, " %%A in ('curl -fkLs "https://ipinfo.io/%2/json"') do (
         if /i "%%~A"=="country" (
-            set "blacklisted_iplookup_countrycode_%ip%=%%~B"
-            call :CHECK_COUNTRYCODE || (
-                set "blacklisted_iplookup_countrycode_%ip%="
+            set "%1_iplookup_countrycode_%2=%%~B"
+            call :CHECK_COUNTRYCODE %1 %2 || (
+                set "%1_iplookup_countrycode_%2="
             )
         )
     )
@@ -935,9 +984,9 @@ call :CHECK_COUNTRYCODE || (
 exit /b
 
 :CHECK_COUNTRYCODE
-if defined blacklisted_iplookup_countrycode_%ip% (
-    if not "!blacklisted_iplookup_countrycode_%ip%:~1!"=="" (
-        if "!blacklisted_iplookup_countrycode_%ip%:~2!"=="" (
+if defined %1_iplookup_countrycode_%2 (
+    if not "!%1_iplookup_countrycode_%2:~1!"=="" (
+        if "!%1_iplookup_countrycode_%2:~2!"=="" (
             exit /b 0
         )
     )
