@@ -37,11 +37,11 @@ cls
 setlocal DisableDelayedExpansion
 pushd "%~dp0"
 set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
-set "@ADMINISTRATOR_MANIFEST_REQUIRED=(mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '?' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
+set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit"
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
 setlocal EnableDelayedExpansion
 set "@LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`"
-set TITLE=PS3 Blacklist Sniffer v1.4
+set TITLE=PS3 Blacklist Sniffer v1.5
 title !TITLE!
 (set \N=^
 %=leave unchanged=%
@@ -334,6 +334,29 @@ if !generate_new_settings_file!==true (
     call :CREATE_SETTINGS_FILE
     goto :SETUP
 )
+for %%A in ("lib\tmp\dynamic_iplookup_*.tmp") do (
+    del /f /q "%%~A"
+)
+if exist "!WINDOWS_BLACKLIST_PATH!" (
+    for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
+        set first_0=1
+        set "x=%%~nA"
+        for /f "usebackqtokens=1,2delims==" %%B in ("!WINDOWS_BLACKLIST_PATH!") do (
+            if defined first_0 (
+                if not "%%~B"=="" (
+                    if not "%%~C"=="" (
+                        if not "!x:%%~C=!"=="!x!" (
+                            set first_0=
+                        )
+                    )
+                )
+            )
+        )
+        if defined first_0 (
+            del /f /q "%%~A"
+        )
+    )
+)
 title Capture network interface selection - !TITLE!
 :CHOOSE_INTERFACE
 cls
@@ -589,15 +612,15 @@ for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
                 set "blacklisted_dynamic_ip=%%~C.%%~D"
             )
             if "!dynamic_ip!"=="!blacklisted_dynamic_ip!" (
-                if not exist "lib\tmp\dynamic_iplookup_%ip%" (
+                if not exist "lib\tmp\dynamic_iplookup_%ip%.tmp" (
                     call :IPLOOKUP dynamic %ip%
                 )
-                if not exist "lib\tmp\blacklisted_iplookup_%%~B" (
+                if not exist "lib\tmp\blacklisted_iplookup_%%~B.tmp" (
                     call :IPLOOKUP blacklisted %%~B
                 )
                 set dynamic_iplookup_dif=false
-                for /f "usebackqtokens=1,2delims==" %%C in ("lib\tmp\dynamic_iplookup_%ip%") do (
-                    for /f "usebackqtokens=1,2delims==" %%E in ("lib\tmp\blacklisted_iplookup_%%~B") do (
+                for /f "usebackqtokens=1,2delims==" %%C in ("lib\tmp\dynamic_iplookup_%ip%.tmp") do (
+                    for /f "usebackqtokens=1,2delims==" %%E in ("lib\tmp\blacklisted_iplookup_%%~B.tmp") do (
                         if "%%~C"=="%%~E" (
                             if not "%%~C%%~D"=="%%~E%%~F" (
                                 if not "%%~C"=="query" (
@@ -790,8 +813,8 @@ for /f "delims=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_"
     exit /b 1
 )
 if not defined blacklisted_hexadecimal_psn_%blacklisted_psn% (
-    if exist "lib\tmp\blacklisted_hexadecimal_psn" (
-        for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_hexadecimal_psn") do (
+    if exist "lib\tmp\blacklisted_hexadecimal_psn.tmp" (
+        for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_hexadecimal_psn.tmp") do (
             set first_6=1
             if defined first_6 (
                 if "%%~A"=="%blacklisted_psn%" (
@@ -887,13 +910,19 @@ if defined ascii_psn (
     set "ascii_psn=!ascii_psn:~1!"
     goto :_ASCII_TO_HEXADECIMAL
 )
-for %%A in ("lib\tmp\blacklisted_hexadecimal_psn") do (
+for %%A in ("lib\tmp\blacklisted_hexadecimal_psn.tmp") do (
     if not exist "%%~dpA" (
-        md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\%
+        md "%%~dpA" || (
+            set "?=%%~dpA"
+            %@ADMINISTRATOR_MANIFEST_REQUIRED%
+        )
     )
     >>"%%~A" (
         echo %blacklisted_psn%=!blacklisted_hexadecimal_psn_%blacklisted_psn%!
-    ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\blacklisted_hexadecimal_psn%
+    ) || (
+        set "?=%%~A"
+        %@ADMINISTRATOR_MANIFEST_REQUIRED%
+    )
 )
 exit /b 0
 
@@ -911,8 +940,8 @@ exit /b 0
 
 :IPLOOKUP
 set "%1_iplookup_%2=true"
-if exist "lib\tmp\%1_iplookup_%2" (
-    for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\%1_iplookup_%2") do (
+if exist "lib\tmp\%1_iplookup_%2.tmp" (
+    for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\%1_iplookup_%2.tmp") do (
         set first_7=1
         if defined first_7 (
             if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~A`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
@@ -957,18 +986,24 @@ if exist "lib\tmp\%1_iplookup_%2" (
             )
         )
     )
-    for %%A in ("lib\tmp\blacklisted_iplookup") do (
+    for %%A in ("lib\tmp\%1_iplookup.tmp") do (
         if not exist "%%~dpA" (
-            md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\%
+            md "%%~dpA" || (
+                set "?=%%~dpA"
+                %@ADMINISTRATOR_MANIFEST_REQUIRED%
+            )
         )
     )
     for %%A in (%@LOOKUP_IPLOOKUP_FIELDS:`=,%) do (
         if not defined %1_iplookup_%%~A_%2 (
             set "%1_iplookup_%%~A_%2=N/A"
         )
-        >>"lib\tmp\%1_iplookup_%2" (
+        >>"lib\tmp\%1_iplookup_%2.tmp" (
             echo %%~A=!%1_iplookup_%%~A_%2!
-        ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\blacklisted_iplookup%
+        ) || (
+            set "?=%%~A"
+            %@ADMINISTRATOR_MANIFEST_REQUIRED%
+        )
     )
 )
 call :CHECK_COUNTRYCODE %1 %2 || (
@@ -1144,7 +1179,10 @@ exit /b
     echo PS3_NOTIFICATIONS_BOTTUM_TIMER=!PS3_NOTIFICATIONS_BOTTUM_TIMER!
     echo PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL=!PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL!
     echo PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER=!PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER!
-) || %@ADMINISTRATOR_MANIFEST_REQUIRED:?=Settings.ini%
+) || (
+    set "?=Settings.ini"
+    %@ADMINISTRATOR_MANIFEST_REQUIRED%
+)
 exit /b
 
 :PS3_IP_AND_MAC_ADDRESS_AUTOMATIC_ARP_ATTRIBUTION
@@ -1257,11 +1295,17 @@ exit /b 0
 :MSGBOX_GENERATION
 for %%A in ("lib\msgbox.vbs") do (
     if not exist "%%~dpA" (
-        md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=lib\tmp\%
+        md "%%~dpA" || (
+            set "?=%%~dpA"
+            %@ADMINISTRATOR_MANIFEST_REQUIRED%
+        )
     )
     >"%%~A" (
         echo MsgBox WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)
-    ) || %@ADMINISTRATOR_MANIFEST_REQUIRED:?=lib\msgbox.vbs%
+    ) || (
+        set "?=%%~A"
+        %@ADMINISTRATOR_MANIFEST_REQUIRED%
+    )
 )
 exit /b
 
