@@ -41,8 +41,6 @@ set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! 
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
 setlocal EnableDelayedExpansion
 set "@LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`"
-set TITLE=PS3 Blacklist Sniffer v1.5
-title !TITLE!
 (set \N=^
 %=leave unchanged=%
 )
@@ -51,6 +49,26 @@ if defined ProgramFiles(x86) (
 ) else (
     set "PATH=!PATH!;lib\Curl\x32"
 )
+set VERSION=v1.6
+set TITLE=PS3 Blacklist Sniffer !VERSION!
+title !TITLE!
+for %%A in (
+    "VERSION"
+    "last_version"
+) do (
+    if defined %%A (
+        set old_%%A=!%%A!
+    )
+)
+if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
+    for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq cmd.exe" ^| find /i "PS3 Blacklist Sniffer"') do (
+        >nul 2>&1 taskkill /f /pid "%%~A" /t
+    )
+    >nul move /y "%~nx0" "PS3_Blacklist_Sniffer.bat" && (
+        start "" "PS3_Blacklist_Sniffer.bat" && exit
+    )
+)
+call :UPDATER
 >nul 2>&1 sc query npcap || (
     >nul 2>&1 sc query npf || (
         %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE!"
@@ -337,6 +355,32 @@ if !generate_new_settings_file!==true (
 for %%A in ("lib\tmp\dynamic_iplookup_*.tmp") do (
     del /f /q "%%~A"
 )
+for %%A in ("lib\tmp\*_iplookup_*.tmp") do (
+    if defined files_to_delete (
+        set files_to_delete=
+    )
+    for /f "usebackqtokens=1,2delims==" %%B in ("lib\tmp\%%~nxA") do (
+        if not "%%~B"=="" (
+            if not "%%~C"=="" (
+                if "%%~B"=="proxy_2" (
+                    if "%%~C"=="N/A" (
+                        set "files_to_delete=%%~A"
+                    )
+                )
+                if defined files_to_delete (
+                    if "%%~B"=="type" (
+                        if "%%~C"=="N/A" (
+                            del /f /q "%%~A"
+                        )
+                    )
+                )
+            )
+        )
+    )
+)
+if defined files_to_delete (
+    set files_to_delete=
+)
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
         set first_0=1
@@ -494,6 +538,9 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
 )
 if defined PS3_IP_ADDRESS (
     set "@PS3_IP_ADDRESS=dst or src host !PS3_IP_ADDRESS! and "
+    if "!VERSION:~1,3!" lss "!last_version:~1,3!" (
+        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=!TITLE: =+!:%%0D%%0AA+newer+version+is+detected+(v!last_version:~0,3!).&icon=21&snd=5"
+    )
 )
 if defined PS3_MAC_ADDRESS (
     set "@PS3_MAC_ADDRESS=ether dst or src !PS3_MAC_ADDRESS! and "
@@ -526,17 +573,17 @@ for /l %%. in () do (
                                                 set "hexadecimal_packet=%%~G"
                                                 set "frame_len=%%~H"
                                                 if defined local_ip_%%~B (
-                                                    set "reverse_ip=%%~D"
-                                                    set "ip=%%~E"
-                                                    set "port=%%~F"
                                                     if not "!skip_packet_%%~E!"=="true" (
+                                                        set "reverse_ip=%%~D"
+                                                        set "ip=%%~E"
+                                                        set "port=%%~F"
                                                         call :BLACKLISTED_SEARCH
                                                     )
                                                 ) else (
-                                                    set "reverse_ip=%%~A"
-                                                    set "ip=%%~B"
-                                                    set "port=%%~C"
                                                     if not "!skip_packet_%%~B!"=="true" (
+                                                        set "reverse_ip=%%~A"
+                                                        set "ip=%%~B"
+                                                        set "port=%%~C"
                                                         call :BLACKLISTED_SEARCH
                                                     )
                                                 )
@@ -625,7 +672,11 @@ for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
                             if not "%%~C%%~D"=="%%~E%%~F" (
                                 if not "%%~C"=="query" (
                                     if not "%%~C"=="reverse" (
-                                        set dynamic_iplookup_dif=true
+                                        if not "%%~C"=="type" (
+                                            if not "%%~C"=="proxy_2" (
+                                                set dynamic_iplookup_dif=true
+                                            )
+                                        )
                                     )
                                 )
                             )
@@ -1371,3 +1422,45 @@ if "%~1"=="" exit /b 1
 set "x=%~1"
 if not "!x:~1!"=="" if "!x:~2!"=="" for /f "delims=0123456789abcdefABCDEF" %%A in ("%~1") do exit /b 1
 exit /b 0
+
+:UPDATER
+for /f %%A in ('curl.exe -fkLs "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/version/version.txt"') do (
+    set "last_version=%%~A"
+)
+if not defined last_version (
+    exit /b
+)
+if "!VERSION:~1,3!" geq "!last_version:~1,3!" (
+    exit /b
+)
+if defined OLD_VERSION (
+    if defined OLD_LASTVERSION (
+        if "!OLD_VERSION!"=="!VERSION!" (
+            if "!OLD_LASTVERSION!"=="!last_version!" (
+                exit /b
+            )
+        )
+    )
+)
+>"lib\msgbox_updater.vbs" (
+echo Dim Response
+echo Response=MsgBox^(WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)^)
+echo If Response=vbYes then
+echo wscript.quit 6
+echo End If
+echo wscript.quit 7
+)
+cscript //nologo "lib\msgbox_updater.vbs" "New version found. Do you want to update ?!\N!!\N!Current version: !VERSION!!\N!Latest version   : !last_version!" 69668 "!TITLE! Updater"
+if not "!errorlevel!"=="6" (
+    exit /b
+)
+curl.exe --create-dirs -f#kLo "[UPDATED]_PS3_Blacklist_Sniffer.bat" "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/main/PS3_Blacklist_Sniffer.bat" || (
+    exit /b
+)
+if not exist "[UPDATED]_PS3_Blacklist_Sniffer.bat" (
+    exit /b
+)
+start "" "[UPDATED]_PS3_Blacklist_Sniffer.bat" && (
+    exit
+)
+exit /b
