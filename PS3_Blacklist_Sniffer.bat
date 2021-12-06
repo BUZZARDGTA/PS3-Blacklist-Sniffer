@@ -49,7 +49,7 @@ if defined ProgramFiles(x86) (
 ) else (
     set "PATH=!PATH!;lib\Curl\x32"
 )
-set VERSION=v1.6
+set VERSION=v1.7
 set TITLE=PS3 Blacklist Sniffer !VERSION!
 title !TITLE!
 for %%A in (
@@ -1018,20 +1018,22 @@ if exist "lib\tmp\%1_iplookup_%2.tmp" (
             )
         )
     )
-    for /f "tokens=1,2delims=:" %%A in ('curl -fkLs "https://proxycheck.io/v2/%2?vpn=1&port=1"') do (
-        set "x=%%~A:%%~B"
-        set "x=!x:"=!"
-        if "!x:~-1!"=="," (
-            set "x=!x:~,-1!"
-        )
-        set "x=!x:proxy=proxy_2!"
-        set "x=!x:no=false!"
-        set "x=!x:yes=true!"
-        for /f "tokens=1,2delims=: " %%C in ("!x!") do (
-            if not "%%~C"=="" (
-                if not "%%~D"=="" (
-                    if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~C`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
-                        set "%1_iplookup_%%~C_%2=%%~D"
+    if "%~1"=="blacklisted" (
+        for /f "tokens=1,2delims=:" %%A in ('curl -fkLs "https://proxycheck.io/v2/%2?vpn=1&port=1"') do (
+            set "x=%%~A:%%~B"
+            set "x=!x:"=!"
+            if "!x:~-1!"=="," (
+                set "x=!x:~,-1!"
+            )
+            set "x=!x:proxy=proxy_2!"
+            set "x=!x:no=false!"
+            set "x=!x:yes=true!"
+            for /f "tokens=1,2delims=: " %%C in ("!x!") do (
+                if not "%%~C"=="" (
+                    if not "%%~D"=="" (
+                        if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~C`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
+                            set "%1_iplookup_%%~C_%2=%%~D"
+                        )
                     )
                 )
             )
