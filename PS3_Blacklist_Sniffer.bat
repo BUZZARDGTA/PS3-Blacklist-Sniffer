@@ -49,9 +49,6 @@ if defined ProgramFiles(x86) (
 ) else (
     set "PATH=!PATH!;lib\Curl\x32"
 )
-set VERSION=v1.7
-set TITLE=PS3 Blacklist Sniffer !VERSION!
-title !TITLE!
 for %%A in (
     "VERSION"
     "last_version"
@@ -65,9 +62,14 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         >nul 2>&1 taskkill /f /pid "%%~A" /t
     )
     >nul move /y "%~nx0" "PS3_Blacklist_Sniffer.bat" && (
-        start "" "PS3_Blacklist_Sniffer.bat" && exit
+        start "" "PS3_Blacklist_Sniffer.bat" && (
+            exit
+        )
     )
 )
+set VERSION=v1.8 - 06/12/2021
+set TITLE=PS3 Blacklist Sniffer !VERSION:~0,4!
+title !TITLE!
 call :UPDATER
 >nul 2>&1 sc query npcap || (
     >nul 2>&1 sc query npf || (
