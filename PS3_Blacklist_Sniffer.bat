@@ -68,7 +68,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v1.9 - 10/12/2021
+set VERSION=v1.9.1 - 10/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,4!
 title !TITLE!
 echo:
@@ -644,6 +644,19 @@ for /l %%. in () do (
 exit /b
 
 :BLACKLIST_SEARCH
+if defined local_ip_%ip% (
+    exit /b 0
+)
+if defined blacklisted_found_%ip% (
+    exit /b 0
+)
+if defined skip_static_%ip% (
+    if defined skip_lookup_%ip% (
+        if defined skip_dyn_%ip% (
+            exit /b 0
+        )
+    )
+)
 if "%ip:~0,8%"=="192.168." (
     set "local_ip_%ip%=true"
     exit /b 0
@@ -671,34 +684,24 @@ if "%ip:~0,8%"=="192.168." (
         )
     )
 )
-if defined blacklisted_found_%ip% (
-    exit /b 0
-)
-if defined skip_static_%ip% (
-    if defined skip_lookup_%ip% (
-        if defined skip_dyn_%ip% (
-            exit /b 0
-        )
-    )
-)
 set lookup_psn=false
-if not "!@LOOKUP_PSN_LENGTH:`%frame_len%`=!"=="!@LOOKUP_PSN_LENGTH!" (
-    if not "!hexadecimal_packet:FF83FFFEFFFE=!"=="!hexadecimal_packet!" (
-        if not "!hexadecimal_packet:707333=!"=="!hexadecimal_packet!" (
-            set lookup_psn=true
+if not defined skip_lookup_%ip% (
+    if not "!@LOOKUP_PSN_LENGTH:`%frame_len%`=!"=="!@LOOKUP_PSN_LENGTH!" (
+        if not "!hexadecimal_packet:FF83FFFEFFFE=!"=="!hexadecimal_packet!" (
+            if not "!hexadecimal_packet:707333=!"=="!hexadecimal_packet!" (
+                set lookup_psn=true
+            )
         )
     )
 )
 for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
     if not "%%~A"=="" (
+        set "blacklisted_psn=%%~A"
+        set "blacklisted_ip=%%~B"
         if not defined skip_static_%ip% (
-            set "blacklisted_psn=%%~A"
-            set "blacklisted_ip=%%~B"
-            if not "%%~B"=="" (
-                if "%ip%"=="%%~B" (
-                    call :BLACKLISTED_FOUND
-                    exit /b 0
-                )
+            if "%ip%"=="%%~B" (
+                call :BLACKLISTED_FOUND
+                exit /b 0
             )
         )
         if not defined skip_lookup_%ip% (
@@ -710,15 +713,15 @@ for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
                         )
                     )
                     if not defined blacklisted_invalid_psn_%%~A (
-                        for %%D in (1,2) do (
-                            set "hexadecimal_packet_psn_%%D=!hexadecimal_packet:*FF83FFFEFFFE=!"
-                            if %%D==1 (
+                        for %%C in (1,2) do (
+                            set "hexadecimal_packet_psn_%%C=!hexadecimal_packet:*FF83FFFEFFFE=!"
+                            if %%C==1 (
                                 set "hexadecimal_packet_psn_1=!hexadecimal_packet_psn_1:~8,32!"
                             ) else (
                                 set "hexadecimal_packet_psn_2=!hexadecimal_packet_psn_2:~72,32!"
                             )
-                            set hexadecimal_packet_psn_%%D=!hexadecimal_packet_psn_%%D:00=!
-                            if "!hexadecimal_packet_psn_%%D!"=="!blacklisted_hexadecimal_psn_%%~A!" (
+                            set hexadecimal_packet_psn_%%C=!hexadecimal_packet_psn_%%C:00=!
+                            if /i "!hexadecimal_packet_psn_%%C!"=="!blacklisted_hexadecimal_psn_%%~A!" (
                                 set create_user_in_blacklist=true
                                 call :BLACKLISTED_FOUND
                                 exit /b 0
@@ -770,6 +773,9 @@ for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
             )
         )
     )
+)
+if not "!@LOOKUP_PSN_LENGTH:`%frame_len%`=!"=="!@LOOKUP_PSN_LENGTH!" (
+    set skip_lookup_%ip%=true
 )
 if !lookup_psn!==true (
     set skip_lookup_%ip%=true
