@@ -68,8 +68,8 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v1.9.1 - 10/12/2021
-set TITLE=PS3 Blacklist Sniffer !VERSION:~0,4!
+set VERSION=v1.9.2 - 13/12/2021
+set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
 echo Searching for a new update ...
@@ -697,7 +697,6 @@ if not defined skip_lookup_%ip% (
 for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
     if not "%%~A"=="" (
         set "blacklisted_psn=%%~A"
-        set "blacklisted_ip=%%~B"
         if not defined skip_static_%ip% (
             if "%ip%"=="%%~B" (
                 call :BLACKLISTED_FOUND
@@ -774,14 +773,17 @@ for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         )
     )
 )
-if not "!@LOOKUP_PSN_LENGTH:`%frame_len%`=!"=="!@LOOKUP_PSN_LENGTH!" (
-    set skip_lookup_%ip%=true
+if not defined skip_lookup_%ip% (
+    if !lookup_psn!==true (
+        set skip_lookup_%ip%=true
+    )
 )
-if !lookup_psn!==true (
-    set skip_lookup_%ip%=true
+if not defined skip_dyn_%ip% (
+    set skip_dyn_%ip%=true
 )
-set skip_dyn_%ip%=true
-set skip_static_%ip%=true
+if not defined skip_static_%ip% (
+    set skip_static_%ip%=true
+)
 exit /b 1
 
 :BLACKLISTED_FOUND
@@ -1524,7 +1526,7 @@ for /f %%A in ('curl.exe -fkLs "https://raw.githubusercontent.com/Illegal-Servic
 if not defined last_version (
     exit /b
 )
-if "!VERSION:~1,3!" geq "!last_version:~1,3!" (
+if "!VERSION:~1,5!" geq "!last_version:~1,5!" (
     exit /b
 )
 if defined OLD_VERSION (
