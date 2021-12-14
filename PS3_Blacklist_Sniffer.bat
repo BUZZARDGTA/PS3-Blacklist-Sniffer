@@ -981,9 +981,9 @@ if not defined blacklisted_psn_hexadecimal_%blacklisted_psn% (
     )
 )
 set "blacklisted_psn_hexadecimal_%blacklisted_psn%="
-set "blacklisted_ascii_psn=%blacklisted_psn%"
+set "blacklisted_psn_ascii=%blacklisted_psn%"
 :_ASCII_TO_HEXADECIMAL
-if defined blacklisted_ascii_psn (
+if defined blacklisted_psn_ascii (
     for %%A in (
         "a`61"
         "b`62"
@@ -1051,12 +1051,12 @@ if defined blacklisted_ascii_psn (
         "_`5F"
     ) do (
         for /f "tokens=1,2delims=`" %%B in ("%%~A") do (
-            if "!blacklisted_ascii_psn:~0,1!"=="%%~B" (
+            if "!blacklisted_psn_ascii:~0,1!"=="%%~B" (
                 set "blacklisted_psn_hexadecimal_%blacklisted_psn%=!blacklisted_psn_hexadecimal_%blacklisted_psn%!%%~C"
             )
         )
     )
-    set "blacklisted_ascii_psn=!blacklisted_ascii_psn:~1!"
+    set "blacklisted_psn_ascii=!blacklisted_psn_ascii:~1!"
     goto :_ASCII_TO_HEXADECIMAL
 )
 for %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
