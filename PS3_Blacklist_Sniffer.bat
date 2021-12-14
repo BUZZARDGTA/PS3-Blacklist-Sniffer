@@ -68,7 +68,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v1.9.3 - 13/12/2021
+set VERSION=v1.9.4 - 14/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -361,26 +361,26 @@ if !generate_new_settings_file!==true (
 )
 echo:
 echo Cleaning incorrect, invalid or unnecessary temporary !TITLE! files ...
-if exist "lib\tmp\_blacklisted_hexadecimal_psn.tmp" (
-    del /f /q "lib\tmp\_blacklisted_hexadecimal_psn.tmp"
+if exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
+    del /f /q "lib\tmp\_blacklisted_psn_hexadecimal.tmp"
 )
 if exist "!WINDOWS_BLACKLIST_PATH!" (
-    if exist "lib\tmp\blacklisted_hexadecimal_psn.tmp" (
-        for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_hexadecimal_psn.tmp") do (
-            set first_7=1
+    if exist "lib\tmp\blacklisted_psn_hexadecimal.tmp" (
+        for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
+            set first_6=1
             for /f "usebackqdelims==" %%C in ("!WINDOWS_BLACKLIST_PATH!") do (
-                if defined first_7 (
+                if defined first_6 (
                     if "%%~A"=="%%~C" (
-                        set first_7=
-                        >>"lib\tmp\_blacklisted_hexadecimal_psn.tmp" (
+                        set first_6=
+                        >>"lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
                             echo %%~A=%%~B
                         )
                     )
                 )
             )
         )
-        >nul move /y "lib\tmp\_blacklisted_hexadecimal_psn.tmp" "lib\tmp\blacklisted_hexadecimal_psn.tmp"
-        set first_7=
+        >nul move /y "lib\tmp\_blacklisted_psn_hexadecimal.tmp" "lib\tmp\blacklisted_psn_hexadecimal.tmp"
+        set first_6=
     )
 )
 for %%A in ("lib\tmp\dynamic_iplookup_*.tmp") do (
@@ -523,7 +523,7 @@ echo:
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     for /f "usebackqdelims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         if not "%%~A"=="" (
-            if not defined blacklisted_hexadecimal_psn_%%~A (
+            if not defined blacklisted_psn_hexadecimal_%%~A (
                 if not defined blacklisted_invalid_psn_%%~A (
                     set "blacklisted_psn=%%~A"
                     call :ASCII_TO_HEXADECIMAL || (
@@ -546,7 +546,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
     echo:
 )
 :WAIT_FILE_SAVED_WINDOWS_BLACKLIST_PATH
->nul 2>&1 set blacklisted_hexadecimal_psn_ || (
+>nul 2>&1 set blacklisted_psn_hexadecimal_ || (
     if defined notepad_pid (
         tasklist /v /fo csv /fi "pid eq !notepad_pid!" | >nul find /i "notepad.exe" || (
             set notepad_pid=
@@ -706,7 +706,7 @@ for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         if not defined skip_lookup_%ip% (
             if !lookup_psn!==true (
                 if not defined blacklisted_invalid_psn_%%~A (
-                    if not defined blacklisted_hexadecimal_psn_%%~A (
+                    if not defined blacklisted_psn_hexadecimal_%%~A (
                         call :ASCII_TO_HEXADECIMAL || (
                             set "blacklisted_invalid_psn_%%~A=true"
                         )
@@ -720,7 +720,7 @@ for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
                                 set "hexadecimal_psn_2=!hexadecimal_psn_2:~72,32!"
                             )
                             set hexadecimal_psn_%%C=!hexadecimal_psn_%%C:00=!
-                            if /i "!hexadecimal_psn_%%C!"=="!blacklisted_hexadecimal_psn_%%~A!" (
+                            if /i "!hexadecimal_psn_%%C!"=="!blacklisted_psn_hexadecimal_%%~A!" (
                                 set create_user_in_blacklist=true
                                 call :BLACKLISTED_FOUND
                                 exit /b 0
@@ -809,7 +809,16 @@ if not defined blacklisted_iplookup_%ip% (
 set blacklisted_psn_list_counter=1
 set "@blacklisted_psn_list=[%blacklisted_psn%]"
 set "@ps3_blacklisted_psn_list=%%5B%blacklisted_psn%%%5D"
-for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
+for /f "delims==" %%A in ('find "%blacklisted_psn%=" "!WINDOWS_BLACKLIST_PATH!"') do (
+    if "%%~A"=="%blacklisted_psn%" (
+        if "!@blacklisted_psn_list:[%%~A]=!"=="!@blacklisted_psn_list!" (
+            set /a blacklisted_psn_list_counter+=1
+            set "@blacklisted_psn_list=!@blacklisted_psn_list!, [%%~A]"
+            set "@ps3_blacklisted_psn_list=!@ps3_blacklisted_psn_list!,+%%5B%%~A%%5D"
+        )
+    )
+)
+for /f "tokens=1,2delims==" %%A in ('find "=%ip%" "!WINDOWS_BLACKLIST_PATH!"') do (
     if "%%~B"=="%ip%" (
         if "!@blacklisted_psn_list:[%%~A]=!"=="!@blacklisted_psn_list!" (
             set /a blacklisted_psn_list_counter+=1
@@ -957,12 +966,12 @@ if "%blacklisted_psn:~2%"=="" (
 for /f "delims=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" %%A in ("%blacklisted_psn%") do (
     exit /b 1
 )
-if not defined blacklisted_hexadecimal_psn_%blacklisted_psn% (
-    if exist "lib\tmp\blacklisted_hexadecimal_psn.tmp" (
-        for /f "tokens=1,2delims==" %%A in ('find "%blacklisted_psn%=" "lib\tmp\blacklisted_hexadecimal_psn.tmp"') do (
+if not defined blacklisted_psn_hexadecimal_%blacklisted_psn% (
+    if exist "lib\tmp\blacklisted_psn_hexadecimal.tmp" (
+        for /f "tokens=1,2delims==" %%A in ('find "%blacklisted_psn%=" "lib\tmp\blacklisted_psn_hexadecimal.tmp"') do (
             if "%%~A"=="%blacklisted_psn%" (
                 if not "%%~B"=="" (
-                    set "blacklisted_hexadecimal_psn_%blacklisted_psn%=%%~B"
+                    set "blacklisted_psn_hexadecimal_%blacklisted_psn%=%%~B"
                     call :CHECK_HEXADECIMAL_PSN && (
                         exit /b 0
                     )
@@ -971,7 +980,7 @@ if not defined blacklisted_hexadecimal_psn_%blacklisted_psn% (
         )
     )
 )
-set "blacklisted_hexadecimal_psn_%blacklisted_psn%="
+set "blacklisted_psn_hexadecimal_%blacklisted_psn%="
 set "blacklisted_ascii_psn=%blacklisted_psn%"
 :_ASCII_TO_HEXADECIMAL
 if defined blacklisted_ascii_psn (
@@ -1043,14 +1052,14 @@ if defined blacklisted_ascii_psn (
     ) do (
         for /f "tokens=1,2delims=`" %%B in ("%%~A") do (
             if "!blacklisted_ascii_psn:~0,1!"=="%%~B" (
-                set "blacklisted_hexadecimal_psn_%blacklisted_psn%=!blacklisted_hexadecimal_psn_%blacklisted_psn%!%%~C"
+                set "blacklisted_psn_hexadecimal_%blacklisted_psn%=!blacklisted_psn_hexadecimal_%blacklisted_psn%!%%~C"
             )
         )
     )
     set "blacklisted_ascii_psn=!blacklisted_ascii_psn:~1!"
     goto :_ASCII_TO_HEXADECIMAL
 )
-for %%A in ("lib\tmp\blacklisted_hexadecimal_psn.tmp") do (
+for %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
     if not exist "%%~dpA" (
         md "%%~dpA" || (
             set "?=%%~dpA"
@@ -1058,7 +1067,7 @@ for %%A in ("lib\tmp\blacklisted_hexadecimal_psn.tmp") do (
         )
     )
     >>"%%~A" (
-        echo %blacklisted_psn%=!blacklisted_hexadecimal_psn_%blacklisted_psn%!
+        echo %blacklisted_psn%=!blacklisted_psn_hexadecimal_%blacklisted_psn%!
     ) || (
         set "?=%%~A"
         %@ADMINISTRATOR_MANIFEST_REQUIRED%
@@ -1067,13 +1076,13 @@ for %%A in ("lib\tmp\blacklisted_hexadecimal_psn.tmp") do (
 exit /b 0
 
 :CHECK_HEXADECIMAL_PSN
-if not "!blacklisted_hexadecimal_psn_%blacklisted_psn%:~32!"=="" (
+if not "!blacklisted_psn_hexadecimal_%blacklisted_psn%:~32!"=="" (
     exit /b 1
 )
-if "!blacklisted_hexadecimal_psn_%blacklisted_psn%:~5!"=="" (
+if "!blacklisted_psn_hexadecimal_%blacklisted_psn%:~5!"=="" (
     exit /b 1
 )
-for /f "delims=abcdefABCDEF0123456789" %%A in ("!blacklisted_hexadecimal_psn_%blacklisted_psn%!") do (
+for /f "delims=abcdefABCDEF0123456789" %%A in ("!blacklisted_psn_hexadecimal_%blacklisted_psn%!") do (
     exit /b 1
 )
 exit /b 0
@@ -1082,16 +1091,16 @@ exit /b 0
 set "%1_iplookup_%2=true"
 if exist "lib\tmp\%1_iplookup_%2.tmp" (
     for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\%1_iplookup_%2.tmp") do (
-        set first_6=1
-        if defined first_6 (
+        set first_5=1
+        if defined first_5 (
             if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~A`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
-                set first_6=
+                set first_5=
                 set "%1_iplookup_%%~A_%2=%%~B"
             )
         )
     )
-    if defined first_6 (
-        set first_6=
+    if defined first_5 (
+        set first_5=
     )
 ) else (
     for /f "tokens=1,2delims=</" %%A in ('curl -fkLs "http://ip-api.com/xml/%2?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"') do (
@@ -1412,13 +1421,13 @@ for /f "delims=0123456789" %%A in ("!%1!") do (
 if "!%1:~0,1!"=="0" (
     if not "!%1:~1,1!"=="" (
         if not "!%1:~1,1!"=="0" (
-            set first_5=1
+            set first_4=1
             for /l %%A in (1,1,9) do (
-                if defined first_5 (
+                if defined first_4 (
                     if not "!%1:~1,1!"=="%%~A" (
                         set generate_new_settings_file=true
                         set "%1=!%1:~1!"
-                        set first_5=
+                        set first_4=
                         goto :CHECK_NUMBER_STRIP_STARTING_0
                     )
                 )
