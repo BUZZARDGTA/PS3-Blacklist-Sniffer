@@ -70,7 +70,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.1 - 16/12/2021
+set VERSION=v2.0.2 - 16/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -604,7 +604,6 @@ for /l %%? in () do (
                     )
                 )
             )
-            set hexadecimal_psn=
             for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
                 if not "%%~A"=="" (
                     if not defined blacklisted_invalid_psn_%%~A (
@@ -701,25 +700,26 @@ if "%ip:~0,8%"=="192.168." (
         )
     )
 )
+set psn_ascii=
 if not defined skip_lookup_%ip% (
     if not "!@LOOKUP_PSN_LENGTH:`%frame_len%`=!"=="!@LOOKUP_PSN_LENGTH!" (
         if not "!hexadecimal_packet:FF83FFFEFFFE=!"=="!hexadecimal_packet!" (
             if not "!hexadecimal_packet:707333=!"=="!hexadecimal_packet!" (
-                set "hexadecimal_psn=!hexadecimal_packet:*FF83FFFEFFFE=!"
+                set "psn_hexadecimal=!hexadecimal_packet:*FF83FFFEFFFE=!"
                 if !way!==src (
-                    set "hexadecimal_psn=!hexadecimal_psn:~72,32!"
+                    set "psn_hexadecimal=!psn_hexadecimal:~72,32!"
                 ) else (
-                    set "hexadecimal_psn=!hexadecimal_psn:~8,32!"
+                    set "psn_hexadecimal=!psn_hexadecimal:~8,32!"
                 )
-                set hexadecimal_psn=!hexadecimal_psn:00=!
-                if defined blacklisted_psn_ascii_!hexadecimal_psn! (
-                    set create_user_in_blacklist=true
-                    for %%A in ("^!blacklisted_psn_ascii_!hexadecimal_psn!^!") do (
+                set "psn_hexadecimal=!psn_hexadecimal:00=!"
+                if defined blacklisted_psn_ascii_!psn_hexadecimal! (
+                    for %%A in ("^!blacklisted_psn_ascii_!psn_hexadecimal!^!") do (
                         set "blacklisted_psn=%%~A"
                     )
                     call :BLACKLISTED_FOUND
                     exit /b 0
                 )
+                call :HEXADECIMAL_TO_ASCII
                 set skip_lookup_%ip%=true
             )
         )
@@ -772,7 +772,6 @@ if not defined skip_dyn_%ip% (
             )
             if !dynamic_iplookup_dif!==false (
                 set "blacklisted_psn=%%~A"
-                set create_user_in_blacklist=true
                 call :BLACKLISTED_FOUND
                 exit /b 0
             )
@@ -786,14 +785,10 @@ exit /b 1
 if not defined blacklisted_found_%ip% (
     set blacklisted_found_%ip%=true
 )
-if !create_user_in_blacklist!==true (
-    set create_user_in_blacklist=false
-    >nul findstr /bc:"%blacklisted_psn%=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
-        >>"!WINDOWS_BLACKLIST_PATH!" (
-            echo %blacklisted_psn%=%ip%
-        ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
-    )
+if defined psn_ascii (
+    call :BLACKLIST_WRITE psn_ascii
 )
+call :BLACKLIST_WRITE blacklisted_psn
 for /f "tokens=2delims==." %%A in ('wmic os get LocalDateTime /value') do (
     set "datetime=%%A"
     set "datetime=!datetime:~0,-10!-!datetime:~-10,2!-!datetime:~-8,2!_!datetime:~-6,2!-!datetime:~-4,2!-!datetime:~-2!"
@@ -952,6 +947,14 @@ exit /b
 for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "%1_t2=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100, %1_tDiff=%1_t2-%1_t1, %1_tDiff+=((~(%1_tDiff&(1<<31))>>31)+1)*8640000, %1_seconds=%1_tDiff/100"
 exit /b
 
+:BLACKLIST_WRITE
+>nul findstr /bc:"!%1!=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
+    >>"!WINDOWS_BLACKLIST_PATH!" (
+        echo !%1!=%ip%
+    ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+)
+exit /b
+
 :ASCII_TO_HEXADECIMAL
 if not "%blacklisted_psn:~16%"=="" (
     exit /b 1
@@ -968,7 +971,7 @@ if not defined blacklisted_psn_hexadecimal_%blacklisted_psn% (
             if "%%~A"=="%blacklisted_psn%" (
                 if not "%%~B"=="" (
                     set "blacklisted_psn_hexadecimal_%blacklisted_psn%=%%~B"
-                    call :CHECK_HEXADECIMAL_PSN && (
+                    call :CHECK_PSN_HEXADECIMAL && (
                         set blacklisted_psn_ascii_!blacklisted_psn_hexadecimal_%blacklisted_psn%!=%blacklisted_psn%
                         exit /b 0
                     )
@@ -1073,7 +1076,7 @@ for %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
 )
 exit /b 0
 
-:CHECK_HEXADECIMAL_PSN
+:CHECK_PSN_HEXADECIMAL
 if not "!blacklisted_psn_hexadecimal_%blacklisted_psn%:~32!"=="" (
     exit /b 1
 )
@@ -1082,6 +1085,90 @@ if "!blacklisted_psn_hexadecimal_%blacklisted_psn%:~5!"=="" (
 )
 for /f "delims=abcdefABCDEF0123456789" %%A in ("!blacklisted_psn_hexadecimal_%blacklisted_psn%!") do (
     exit /b 1
+)
+exit /b 0
+
+:HEXADECIMAL_TO_ASCII
+for /f "delims=abcdefABCDEF0123456789" %%A in ("%psn_hexadecimal%") do (
+    exit /b 1
+)
+set "_psn_hexadecimal=%psn_hexadecimal%"
+:_HEXADECIMAL_TO_ASCII
+if defined _psn_hexadecimal (
+    for %%A in (
+        "61`a"
+        "62`b"
+        "63`c"
+        "64`d"
+        "65`e"
+        "66`f"
+        "67`g"
+        "68`h"
+        "69`i"
+        "6A`j"
+        "6B`k"
+        "6C`l"
+        "6D`m"
+        "6E`n"
+        "6F`o"
+        "70`p"
+        "71`q"
+        "72`r"
+        "73`s"
+        "74`t"
+        "75`u"
+        "76`v"
+        "77`w"
+        "78`x"
+        "79`y"
+        "7A`z"
+        "41`A"
+        "42`B"
+        "43`C"
+        "44`D"
+        "45`E"
+        "46`F"
+        "47`G"
+        "48`H"
+        "49`I"
+        "4A`J"
+        "4B`K"
+        "4C`L"
+        "4D`M"
+        "4E`N"
+        "4F`O"
+        "50`P"
+        "51`Q"
+        "52`R"
+        "53`S"
+        "54`T"
+        "55`U"
+        "56`V"
+        "57`W"
+        "58`X"
+        "59`Y"
+        "5A`Z"
+        "30`0"
+        "31`1"
+        "32`2"
+        "33`3"
+        "34`4"
+        "35`5"
+        "36`6"
+        "37`7"
+        "38`8"
+        "39`9"
+        "2D`-"
+        "5F`_"
+    ) do (
+        for /f "tokens=1,2delims=`" %%B in ("%%~A") do (
+            if /i "!_psn_hexadecimal:~0,2!"=="%%~B" (
+                set "psn_ascii=!psn_ascii!%%~C"
+            )
+        )
+    )
+    set "_psn_hexadecimal=!_psn_hexadecimal:~2!"
+    goto :_HEXADECIMAL_TO_ASCII
 )
 exit /b 0
 
