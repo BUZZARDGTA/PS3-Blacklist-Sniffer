@@ -3,11 +3,8 @@
 *Description*:
 
 This script is useful:
-- If you want to keep the track on someone's new usernames or IPs.
-- If you want to detect one of the blacklisted people that are connecting
-or connected to your session.
-- If one of the blacklisted people are not in your session but that
-they tries to join it, you will detect them before they will be there.
+- If you want to track your blacklisted people new usernames or IPs.
+- If you want to detect blacklisted people who are trying to connect in or who are already in to your session.
 
 *Officially tested and supported games*:
 | Games    | IP Address Search | PSN Username Search |
