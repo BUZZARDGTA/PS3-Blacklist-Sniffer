@@ -7,11 +7,11 @@
 
 Officially tested and supported games:
 
-| Games    | IP Address Search | PSN Username Search |
-| :------- | :---------------: | :-----------------: |
-| GTA 5    | Yes               | Yes                 |
-| GTA 4    | Yes               | Yes                 |
-| COD BO3  | Yes               | No                  |
+| Videogames | IP Address Search | PSN Username Search |
+| :--------- | :---------------: | :-----------------: |
+| GTA 5      | Yes               | Yes                 |
+| GTA 4      | Yes               | Yes                 |
+| COD BO3    | Yes               | No                  |
 
 ## Requirements:
 
@@ -31,5 +31,5 @@ Officially tested and supported games:
 Helped me solve and understand a Batch bug with "FOR" loop variables.<br />
 @sintrode and https://www.dostips.com/forum/viewtopic.php?t=6560<br />
 ^^ "How to put inner quotes in outer quotes in "FOR" loop?"<br />
-  
+
 A project created in the "server.bat" Discord: https://discord.gg/GSVrHag<br />
