@@ -9,7 +9,14 @@ username in the game. (At the condition that they still have
 the same IP than the 'Blacklist.ini' given IP.)
 - If one of the blacklisted people are not in your session but that
 they tries to join it, you will detect them before they will be there.
->
+
+*Officially tested and supported games*:
+| Games  | IP Address Search | PSN Username Search |
+| ------ | --- | --- |
+| GTA 5  | Yes | Yes |
+| GTA 4  | Yes | Yes |
+| COD BO3  | Yes | Yes |
+
 *Requirements*:
 > Windows 8, 8.1, 10, 11 (x86/x64)
 >
