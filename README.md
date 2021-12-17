@@ -17,7 +17,7 @@ Officially tested and supported games:
 
 - Windows 8, 8.1, 10, 11 (x86/x64)
 - Wireshark (with Npcap/Winpcap installed)
-- webMAN MOD ((PS3 Notification) not obligatory)
+- webMAN MOD ((PS3 notification) not obligatory)
 
 ## Credits:
 
