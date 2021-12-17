@@ -6,8 +6,7 @@ This script is useful:
 - If you want to keep the track on someone's new usernames or IPs.
 - If you want to detect one of the blacklisted people that are connecting
 or connected to your session. (Even if they have an other
-username in the game. (At the condition that they still have
-the same IP than the 'Blacklist.ini' given IP.)
+username in the game.
 - If one of the blacklisted people are not in your session but that
 they tries to join it, you will detect them before they will be there.
 
