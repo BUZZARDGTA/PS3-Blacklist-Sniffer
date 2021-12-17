@@ -11,11 +11,11 @@ the same IP than the 'Blacklist.ini' given IP.)
 they tries to join it, you will detect them before they will be there.
 
 *Officially tested and supported games*:
-| Games  | IP Address Search | PSN Username Search |
-| ------ | --- | --- |
-| GTA 5  | Yes | Yes |
-| GTA 4  | Yes | Yes |
-| COD BO3  | Yes | Yes |
+| Games    | IP Address Search | PSN Username Search |
+| :------- | :---------------: | :-----------------: |
+| GTA 5    | Yes               | Yes                 |
+| GTA 4    | Yes               | Yes                 |
+| COD BO3  | Yes               | No                  |
 
 *Requirements*:
 > Windows 8, 8.1, 10, 11 (x86/x64)
