@@ -2,9 +2,8 @@
 
 *Description*:
 
-This script is useful:
-- If you want to track your blacklisted people new usernames or IPs.
-- If you want to detect blacklisted people who are trying to connect in or who are already in to your session.
+- Track your blacklisted people new usernames or IPs.
+- Detect blacklisted people who are trying to connect in or who are already in to your session.
 
 *Officially tested and supported games*:
 | Games    | IP Address Search | PSN Username Search |
@@ -13,13 +12,17 @@ This script is useful:
 | GTA 4    | Yes               | Yes                 |
 | COD BO3  | Yes               | No                  |
 
+<hr>
+
 *Requirements*:
 > Windows 8, 8.1, 10, 11 (x86/x64)
 >
 > Wireshark (with Npcap/Winpcap installed)
 >
 > webMAN MOD ((PS3 Notification) not obligatory)
->
+
+<hr>
+
 *Credits*:
 >
 > @Rosalyn - *giving me the force*
