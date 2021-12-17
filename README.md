@@ -38,8 +38,12 @@ they tries to join it, you will detect them before they will be there.
 >
 > @Grub4K - Quick analysis of the source code to improve it.
 >
+> @Grub4K and @Sintrode
+>
+> Helped me solve and understand a Batch bug with "FOR" loop variables.
+>
 > @sintrode and https://www.dostips.com/forum/viewtopic.php?t=6560
 >
-> ^^ "How to put inner quotes in outer quotes in "for" loop?"
+> ^^ "How to put inner quotes in outer quotes in "FOR" loop?"
 >
 > A project created in the "server.bat" Discord: https://discord.gg/GSVrHag
