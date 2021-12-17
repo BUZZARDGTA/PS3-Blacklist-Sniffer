@@ -12,6 +12,7 @@ Tested and supported games:
 | GTA 5      | Yes               | Yes                 |
 | GTA 4      | Yes               | Yes                 |
 | COD BO3    | Yes               | No                  |
+| COD BO2    | Yes               | No                  |
 
 ## Requirements:
 
