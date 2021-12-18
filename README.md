@@ -5,13 +5,14 @@
 - Track your blacklisted people new usernames or IPs.
 - Detect blacklisted people who are trying to connect in or who are already in to your session.
 
-Officially tested and supported games:
+Tested and supported games:
 
 | Videogames | IP Address Search | PSN Username Search |
 | :--------- | :---------------: | :-----------------: |
 | GTA 5      | Yes               | Yes                 |
 | GTA 4      | Yes               | Yes                 |
 | COD BO3    | Yes               | No                  |
+| COD BO2    | Yes               | No                  |
 
 ## Requirements:
 
