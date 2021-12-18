@@ -3,13 +3,9 @@
 ::     PS3_Blacklist_Sniffer.bat - PS3 Blacklist Sniffer
 ::
 :: DESCRIPTION
-::     This script is useful:
-::     - If you want to detect one of the blacklisted people that are connecting
-::     or connected to your session. (Even if they have an other
-::     username in the game. (At the condition that they still have
-::     the same IP than the 'Blacklist.ini' given IP.)
-::     - If one of the blacklisted people are not in your session but that
-::     they tries to join it, you will detect them before they will be there.
+::     Track your blacklisted people new usernames or IPs.
+::     Detect blacklisted people who are trying
+::     to connect in or who are already in to your session.
 ::
 :: REQUIREMENTS
 ::     Windows 8, 8.1, 10, 11 (x86/x64)
@@ -38,6 +34,7 @@ cls
 >nul chcp 65001
 setlocal DisableDelayedExpansion
 pushd "%~dp0"
+for /f %%A in ('copy /z "%~f0" nul') do set "\r=%%A"
 set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
 set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit"
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
@@ -366,6 +363,7 @@ echo Cleaning incorrect, invalid or unnecessary temporary !TITLE! files ...
 if exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
     del /f /q "lib\tmp\_blacklisted_psn_hexadecimal.tmp"
 )
+<nul set /p="Checking temporary file 'blacklisted_psn_hexadecimal.tmp' ...!\r!"
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     if exist "lib\tmp\blacklisted_psn_hexadecimal.tmp" (
         for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
@@ -374,8 +372,10 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
                 if defined first_6 (
                     if "%%~A"=="%%~C" (
                         set first_6=
-                        >>"lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
-                            echo %%~A=%%~B
+                        >nul 2>&1 findstr /bc:"%%~A=%%~B" "lib\tmp\_blacklisted_psn_hexadecimal.tmp" || (
+                            >>"lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
+                                echo %%~A=%%~B
+                            )
                         )
                     )
                 )
@@ -386,9 +386,11 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
     )
 )
 for %%A in ("lib\tmp\dynamic_iplookup_*.tmp") do (
+    <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\r!"
     del /f /q "%%~A"
 )
-for %%A in ("lib\tmp\*_iplookup_*.tmp") do (
+for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
+    <nul set /p="Checking temporary file '%%~nxA' ...                                        !\r!"
     if defined files_to_delete (
         set files_to_delete=
     )
@@ -403,6 +405,7 @@ for %%A in ("lib\tmp\*_iplookup_*.tmp") do (
                 if defined files_to_delete (
                     if "%%~B"=="type" (
                         if "%%~C"=="N/A" (
+                            <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\r!"
                             del /f /q "%%~A"
                         )
                     )
@@ -416,6 +419,7 @@ if defined files_to_delete (
 )
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
+        <nul set /p="Checking temporary file '%%~nxA' ...                                        !\r!"
         set first_0=1
         set "x=%%~nA"
         for /f "usebackqtokens=1,2delims==" %%B in ("!WINDOWS_BLACKLIST_PATH!") do (
@@ -430,6 +434,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
             )
         )
         if defined first_0 (
+            <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\r!"
             del /f /q "%%~A"
         )
     )
@@ -515,8 +520,6 @@ if !ps3_connected_notification!==true (
     )
 )
 echo:
-echo Computing decimal PSN usernames to hexadecimal in memory ...
-echo:
 >nul 2>&1 set blacklisted_invalid_psn_ && (
     for /f "delims==" %%A in ('set blacklisted_invalid_psn_') do (
         set "%%~A="
@@ -525,12 +528,14 @@ echo:
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     for /f "usebackqdelims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         if not "%%~A"=="" (
+            <nul set /p="Computing ascii PSN usernames to hexadecimal in memory ... [%%~A]                !\r!"
             if not defined blacklisted_psn_hexadecimal_%%~A (
                 if not defined blacklisted_invalid_psn_%%~A (
                     set "blacklisted_psn=%%~A"
                     call :ASCII_TO_HEXADECIMAL || (
                         set "blacklisted_invalid_psn_%%~A=true"
-                        echo Blacklisted user ["!blacklisted_psn!"] is not a valid PSN username.
+                        <nul set /p="Blacklisted user ["%%~A"] is not a valid PSN username.                "
+                        echo:
                     )
                 )
             )
@@ -540,11 +545,17 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
     call :CREATE_WINDOWS_BLACKLIST_FILE
     goto :LOOP_BLACKLIST_FILE_EMPTY
 )
+<nul set /p="Computing ascii PSN usernames to hexadecimal in memory ...            "
+echo:
+echo:
 >nul 2>&1 set blacklisted_invalid_psn_ && (
+    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
     echo:
-    echo Unable to perform the username search for this PSN username^(s^) in your 'Blacklist.ini' file.
+    echo Unable to perform the username search for this PSN username^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
     echo Please ensure the username is correct, and check for the following errors:
     echo PSN usernames must consist of 3-16 characters, and only contain: [a-z] [A-Z] [0-9] [-] [_]
+    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
+    echo:
     echo:
 )
 :WAIT_FILE_SAVED_WINDOWS_BLACKLIST_PATH
@@ -555,8 +566,8 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
         )
     )
     if not defined notepad_pid (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find any valid users in your 'Blacklist.ini' file.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE!"
-        start "" "Blacklist.ini"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find any valid users in your 'WINDOWS_BLACKLIST_PATH' setting.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE!"
+        start "" "!WINDOWS_BLACKLIST_PATH!"
         for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq notepad.exe" ^| find /i "notepad.exe"') do (
             set "notepad_pid=%%~A"
         )
@@ -653,7 +664,7 @@ for /l %%? in () do (
             call :CREATE_WINDOWS_BLACKLIST_FILE
         )
     ) else (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' PATH on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
         exit
     )
 )
@@ -782,6 +793,11 @@ if not defined skip_dyn_%ip% (
 exit /b 1
 
 :BLACKLISTED_FOUND
+for /f "tokens=2delims==." %%A in ('wmic os get LocalDateTime /value') do (
+    set "datetime=%%A"
+    set "datetime=!datetime:~0,-10!-!datetime:~-10,2!-!datetime:~-8,2!_!datetime:~-6,2!-!datetime:~-4,2!-!datetime:~-2!"
+    set "hourtime=!datetime:~11,2!:!datetime:~14,2!"
+)
 if not defined blacklisted_found_%ip% (
     set blacklisted_found_%ip%=true
 )
@@ -789,11 +805,6 @@ if defined psn_ascii (
     call :BLACKLIST_WRITE psn_ascii
 )
 call :BLACKLIST_WRITE blacklisted_psn
-for /f "tokens=2delims==." %%A in ('wmic os get LocalDateTime /value') do (
-    set "datetime=%%A"
-    set "datetime=!datetime:~0,-10!-!datetime:~-10,2!-!datetime:~-8,2!_!datetime:~-6,2!-!datetime:~-4,2!-!datetime:~-2!"
-    set "hourtime=!datetime:~11,2!:!datetime:~14,2!"
-)
 if not defined blacklisted_iplookup_%ip% (
     call :IPLOOKUP blacklisted %ip%
 )
@@ -1295,7 +1306,7 @@ call :GET_WINDOWS_TSHARK_PATH && (
     set generate_new_settings_file=true
     exit /b
 )
-%@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' PATH on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
+%@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
 start "" "https://www.wireshark.org/#download"
 if exist "Settings.ini" (
     start "" "Settings.ini"
