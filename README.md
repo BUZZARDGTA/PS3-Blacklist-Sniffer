@@ -9,6 +9,7 @@ Tested and supported games:
 
 | Videogames | IP Address Search | PSN Username Search |
 | :--------- | :---------------: | :-----------------: |
+| Minecraft  | Yes               | Yes                 |
 | GTA 5      | Yes               | Yes                 |
 | GTA 4      | Yes               | Yes                 |
 | COD BO3    | Yes               | No                  |
