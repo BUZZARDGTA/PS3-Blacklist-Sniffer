@@ -2,7 +2,7 @@
 
 ## Description:
 
-- Track your blacklisted people new usernames or IPs.
+- Track your blacklisted people new usernames and IPs.
 - Detect blacklisted people who are trying to connect in or who are already in to your session.
 
 Tested and supported games:
