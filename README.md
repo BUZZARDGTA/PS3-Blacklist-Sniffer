@@ -7,14 +7,15 @@
 
 Tested and supported games:
 
-| Videogames | IP Address Search | PSN Username Search |
-| :--------- | :---------------: | :-----------------: |
-| Minecraft  | Yes               | Yes                 |
-| GTA 5      | Yes               | Yes                 |
-| GTA 4      | Yes               | Yes                 |
-| COD BO3    | Yes               | No                  |
-| COD BO2    | Yes               | No                  |
-| Skate 3    | Yes               | No                  |
+| Videogames               | IP Address Search | PSN Username Search |
+| :----------------------- | :---------------: | :-----------------: |
+| Minecraft                | Yes               | Yes                 |
+| Red Dead Redemption      | Yes               | Yes                 |
+| Grand Theft Auto 5       | Yes               | Yes                 |
+| Grand Theft Auto 4       | Yes               | Yes                 |
+| Call Of Duty Black Ops 3 | Yes               | No                  |
+| Call Of Duty Black Ops 2 | Yes               | No                  |
+| Skate 3                  | Yes               | No                  |
 
 ## Requirements
 
@@ -34,5 +35,4 @@ Tested and supported games:
 [@Grub4K](https://github.com/Grub4K) and [@sintrode](https://github.com/sintrode) - Helped me solving and understanding a Batch bug with `for` loop variables.<br />
 [@sintrode](https://github.com/sintrode) for: [How to put inner quotes in outer quotes in a `for` loop?](https://www.dostips.com/forum/viewtopic.php?t=6560)<br />
 
-A project started in the server.bat Discord server.</br>
-[<img src="https://img.shields.io/discord/288498150145261568">](https://discord.gg/GSVrHag)<br />
+A project started in the [server.bat](https://discord.gg/GSVrHag) Discord server.[&nbsp;server.bat&nbsp;<img src="https://img.shields.io/discord/288498150145261568">](https://discord.gg/GSVrHag)</br>
