@@ -7,15 +7,15 @@
 
 Tested and supported games:
 
-| Videogames               | IP Address Search | PSN Username Search |
-| :----------------------- | :---------------: | :-----------------: |
-| Minecraft                | Yes               | Yes                 |
-| Red Dead Redemption      | Yes               | Yes                 |
-| Grand Theft Auto 5       | Yes               | Yes                 |
-| Grand Theft Auto 4       | Yes               | Yes                 |
-| Call Of Duty Black Ops 3 | Yes               | No                  |
-| Call Of Duty Black Ops 2 | Yes               | No                  |
-| Skate 3                  | Yes               | No                  |
+| Videogames                | IP Address Search | PSN Username Search |
+| :------------------------ | :---------------: | :-----------------: |
+| Minecraft                 | Yes               | Yes                 |
+| Red Dead Redemption       | Yes               | Yes                 |
+| Grand Theft Auto 5        | Yes               | Yes                 |
+| Grand Theft Auto 4        | Yes               | Yes                 |
+| Call of Duty: Black Ops 3 | Yes               | No                  |
+| Call of Duty: Black Ops 2 | Yes               | No                  |
+| Skate 3                   | Yes               | No                  |
 
 ## Requirements
 
