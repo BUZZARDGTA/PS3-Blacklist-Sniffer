@@ -5,7 +5,7 @@
 * Track your blacklisted people new usernames and IPs.
 * Detect blacklisted people who are trying to connect in or who are already in your session.
 
-Tested and supported games:
+**Tested and supported videogames:**
 
 | Videogames                | IP Address Search | PSN Username Search |
 | :------------------------ | :---------------: | :-----------------: |
@@ -19,9 +19,10 @@ Tested and supported games:
 
 ## Requirements
 
-* Windows 8, 8.1, 10, 11 (x86/x64)
-* Wireshark (required Npcap/Winpcap to be installed)
-* webMAN MOD (PS3 notifications, optional)
+* [Windows](https://www.microsoft.com/windows) 8, 8.1, 10, 11 (x86/x64)
+* [Wireshark](https://www.wireshark.org/)
+* [Npcap](https://nmap.org/npcap/) or [Winpcap](https://www.winpcap.org/)
+* *optional:* [webMAN MOD](https://github.com/aldostools/webMAN-MOD) (PS3 notifications)
 
 ## Credits
 
