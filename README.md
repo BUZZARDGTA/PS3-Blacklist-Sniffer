@@ -33,5 +33,5 @@ Tested and supported games:
 [@Grub4K](https://github.com/Grub4K) - Quick analysis of the source code to improve it.<br />
 [@Grub4K](https://github.com/Grub4K) and [@sintrode](https://github.com/sintrode) - Helped me solving and understanding a Batch bug with `for` loop variables.<br />
 [@sintrode](https://github.com/sintrode) for: [How to put inner quotes in outer quotes in a `for` loop?](https://www.dostips.com/forum/viewtopic.php?t=6560)<br />
-
-A project started in the [server.bat](https://discord.gg/GSVrHag) Discord server. [<img src="https://img.shields.io/discord/288498150145261568">](https://discord.gg/GSVrHag)</br>
+</br>
+A project started in the [server.bat](https://discord.gg/GSVrHag) Discord server.
