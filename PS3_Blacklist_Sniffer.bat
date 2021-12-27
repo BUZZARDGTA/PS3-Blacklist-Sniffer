@@ -3,7 +3,7 @@
 ::     PS3_Blacklist_Sniffer.bat - PS3 Blacklist Sniffer
 ::
 :: DESCRIPTION
-::     Track your blacklisted people new usernames or IPs.
+::     Track your blacklisted people new usernames and IPs.
 ::     Detect blacklisted people who are trying
 ::     to connect in or who are already in to your session.
 ::
@@ -34,7 +34,10 @@ cls
 >nul chcp 65001
 setlocal DisableDelayedExpansion
 pushd "%~dp0"
-for /f %%A in ('copy /z "%~f0" nul') do set "\r=%%A"
+for /f %%A in ('copy /z "%~nx0" nul') do set "\R=%%A"
+for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo(0x08"') do (
+    set "\B=%%A"
+)
 set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
 set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit"
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
@@ -67,7 +70,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.3 - 18/12/2021
+set VERSION=v2.0.4 - 27/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -354,7 +357,7 @@ for %%A in (
 )
 if !generate_new_settings_file!==true (
     echo:
-    echo Correct reconstruction of 'settings.ini' ...
+    echo Correct reconstruction of 'Settings.ini' ...
     call :CREATE_SETTINGS_FILE
     goto :SETUP
 )
@@ -363,7 +366,7 @@ echo Cleaning incorrect, invalid or unnecessary temporary !TITLE! files ...
 if exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
     del /f /q "lib\tmp\_blacklisted_psn_hexadecimal.tmp"
 )
-<nul set /p="Checking temporary file 'blacklisted_psn_hexadecimal.tmp' ...!\r!"
+<nul set /p="Checking temporary file 'blacklisted_psn_hexadecimal.tmp' ...!\R!"
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     if exist "lib\tmp\blacklisted_psn_hexadecimal.tmp" (
         for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
@@ -386,11 +389,11 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
     )
 )
 for %%A in ("lib\tmp\dynamic_iplookup_*.tmp") do (
-    <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\r!"
+    <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\R!"
     del /f /q "%%~A"
 )
 for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
-    <nul set /p="Checking temporary file '%%~nxA' ...                                        !\r!"
+    <nul set /p="Checking temporary file '%%~nxA' ...                                        !\R!"
     if defined files_to_delete (
         set files_to_delete=
     )
@@ -405,7 +408,7 @@ for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
                 if defined files_to_delete (
                     if "%%~B"=="type" (
                         if "%%~C"=="N/A" (
-                            <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\r!"
+                            <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\R!"
                             del /f /q "%%~A"
                         )
                     )
@@ -419,7 +422,7 @@ if defined files_to_delete (
 )
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
-        <nul set /p="Checking temporary file '%%~nxA' ...                                        !\r!"
+        <nul set /p="Checking temporary file '%%~nxA' ...                                        !\R!"
         set first_0=1
         set "x=%%~nA"
         for /f "usebackqtokens=1,2delims==" %%B in ("!WINDOWS_BLACKLIST_PATH!") do (
@@ -434,7 +437,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
             )
         )
         if defined first_0 (
-            <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\r!"
+            <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\R!"
             del /f /q "%%~A"
         )
     )
@@ -511,7 +514,7 @@ if !ps3_connected_notification!==true (
     echo Successfully connected to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
 ) else (
     echo Error: Unable to connect to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
-    echo Make sure of the following things:
+    echo Make sure you have the following:
     echo - Your PS3 console must be turned on.
     echo - If you have a HEN jailbreaked console, make sure HEN is enabled.
     echo - webMAN MOD is correctly configured on your PS3 console.
@@ -520,41 +523,86 @@ if !ps3_connected_notification!==true (
     )
 )
 echo:
->nul 2>&1 set blacklisted_invalid_psn_ && (
-    for /f "delims==" %%A in ('set blacklisted_invalid_psn_') do (
-        set "%%~A="
+for %%A in (
+    "blacklisted_psn_invalid_"
+    "blacklisted_ip_invalid_"
+) do (
+    >nul 2>&1 set %%~A && (
+        for /f "delims==" %%B in ('set %%~A') do (
+            set "%%~B="
+        )
     )
 )
 if exist "!WINDOWS_BLACKLIST_PATH!" (
-    for /f "usebackqdelims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
+    echo Computing ascii PSN usernames to hexadecimal in memory and
+    echo checking "!WINDOWS_BLACKLIST_PATH!" PSN Usernames and IP Addresses ...
+    for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
+        for %%C in (
+            "blacklisted_psn_disp"
+            "blacklisted_ip_disp"
+            "result_found"
+        ) do (
+            if defined %%~C (
+                set %%~C=
+            )
+        )
         if not "%%~A"=="" (
-            <nul set /p="Computing ascii PSN usernames to hexadecimal in memory ... [%%~A]                !\r!"
-            if not defined blacklisted_psn_hexadecimal_%%~A (
-                if not defined blacklisted_invalid_psn_%%~A (
-                    set "blacklisted_psn=%%~A"
-                    call :ASCII_TO_HEXADECIMAL || (
-                        set "blacklisted_invalid_psn_%%~A=true"
-                        <nul set /p="Blacklisted user ["%%~A"] is not a valid PSN username.                "
-                        echo:
-                    )
+            set "blacklisted_psn=%%~A"
+            set "blacklisted_ip=%%~B"
+            set "blacklisted_psn_disp=!blacklisted_psn:~0,16!"
+            if not "%%~B"=="" (
+                set "blacklisted_ip_disp=!blacklisted_ip:~0,15!"
+            )
+            <nul set /p="Processing blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] ...                              !\R!"
+            call :ASCII_TO_HEXADECIMAL || (
+                set "blacklisted_psn_invalid_%%~A=true"
+                set result_found=1
+                <nul set /p="Blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] does not contain a valid PSN username."
+                echo:
+            )
+            if not "%%~B"=="" (
+                call :CHECK_IP blacklisted_ip || (
+                    set "blacklisted_ip_invalid_%%~A=true"
+                    set result_found=1
+                    <nul set /p="Blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] does not contain a valid IP address."
+                    echo:
                 )
             )
         )
+    )
+    if not defined result_found (
+        <nul set /p=".!\B!                                                                   "
+    )
+    for %%A in (
+        "blacklisted_psn"
+        "blacklisted_psn_disp"
+        "blacklisted_ip"
+        "blacklisted_ip_disp"
+    ) do (
+        set %%~A=
     )
 ) else (
     call :CREATE_WINDOWS_BLACKLIST_FILE
     goto :LOOP_BLACKLIST_FILE_EMPTY
 )
-<nul set /p="Computing ascii PSN usernames to hexadecimal in memory ...            "
 echo:
-echo:
->nul 2>&1 set blacklisted_invalid_psn_ && (
-    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
+>nul 2>&1 set blacklisted_psn_invalid_ && (
+    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
     echo:
-    echo Unable to perform the username search for this PSN username^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
+    echo Unable to perform the username search for this entrie^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
     echo Please ensure the username is correct, and check for the following errors:
     echo PSN usernames must consist of 3-16 characters, and only contain: [a-z] [A-Z] [0-9] [-] [_]
-    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
+    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
+    echo:
+    echo:
+)
+>nul 2>&1 set blacklisted_ip_invalid_ && (
+    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
+    echo:
+    echo Unable to perform the username search for this entrie^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
+    echo Please ensure the IP Address is correct, and check for the following errors:
+    echo The IP address must be composed of 4 octets of a number from 0 to 255 each separated by a dot.
+    <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
     echo:
     echo:
 )
@@ -594,7 +642,7 @@ if defined PS3_MAC_ADDRESS (
 )
 echo Started capturing on network interface "!Interface_%CAPTURE_INTERFACE%!" ...
 echo:
-set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 4.68.83.171 and not net 10.0.0.0/8 and not net 20.40.183.0/24 and not net 20.188.217.0/24 and not net 20.193.9.0/24 and not net 44.239.105.0/24 and not net 44.240.54.0/24 and not net 52.25.207.0/24 and not net 52.27.10.0/24 and not net 52.32.157.0/24 and not net 52.33.65.0/24 and not net 52.33.207.0/24 and not net 52.34.172.0/24 and not net 52.36.6.0/24 and not net 52.37.233.0/24 and not net 52.37.45.0/24 and not net 52.37.102.0/24 and not net 52.37.139.0/24 and not net 52.37.199.0/24 and not net 52.37.242.0/24 and not net 52.37.243.0/24 and not net 52.39.46.0/24 and not net 52.40.62.0/24 and not net 52.139.168.0/24 and not net 52.139.169.0/24 and not net 54.68.83.0/24 and not net 80.67.169.0/24 and not net 100.64.0.0/10 and not net 172.16.0.0/12 and not net 185.56.65.0/24 and not net 192.81.241.0/24 and not net 192.81.245.0/24"
+set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 162.244.53.174 and not net 162.244.53.175 and not net 4.68.83.171 and not net 20.40.183.0/24 and not net 20.188.217.0/24 and not net 20.193.9.0/24 and not net 44.239.105.0/24 and not net 44.240.54.0/24 and not net 52.25.207.0/24 and not net 52.27.10.0/24 and not net 52.32.157.0/24 and not net 52.33.65.0/24 and not net 52.33.207.0/24 and not net 52.34.172.0/24 and not net 52.36.6.0/24 and not net 52.37.233.0/24 and not net 52.37.45.0/24 and not net 52.37.102.0/24 and not net 52.37.139.0/24 and not net 52.37.199.0/24 and not net 52.37.242.0/24 and not net 52.37.243.0/24 and not net 52.39.46.0/24 and not net 52.40.62.0/24 and not net 52.139.168.0/24 and not net 52.139.169.0/24 and not net 54.68.83.0/24 and not net 80.67.169.0/24 and not net 172.16.0.0/12 and not net 185.56.65.0/24 and not net 192.81.241.0/24 and not net 192.81.245.0/24"
 if defined CAPTURE_FILTER (
     if "!CAPTURE_FILTER:~-5!"==" and " (
         set "CAPTURE_FILTER=!CAPTURE_FILTER:~0,-5!"
@@ -617,13 +665,9 @@ for /l %%? in () do (
             )
             for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
                 if not "%%~A"=="" (
-                    if not defined blacklisted_invalid_psn_%%~A (
-                        if not defined blacklisted_psn_hexadecimal_%%~A (
-                            set "blacklisted_psn=%%~A"
-                            call :ASCII_TO_HEXADECIMAL || (
-                                set "blacklisted_invalid_psn_%%~A=true"
-                            )
-                        )
+                    if not defined blacklisted_psn_hexadecimal_%%~A (
+                        set "blacklisted_psn=%%~A"
+                        call :ASCII_TO_HEXADECIMAL
                     )
                 )
             )
@@ -976,7 +1020,9 @@ if "%blacklisted_psn:~2%"=="" (
 for /f "delims=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" %%A in ("%blacklisted_psn%") do (
     exit /b 1
 )
-if not defined blacklisted_psn_hexadecimal_%blacklisted_psn% (
+if defined blacklisted_psn_hexadecimal_%blacklisted_psn% (
+    exit /b 0
+) else (
     if exist "lib\tmp\blacklisted_psn_hexadecimal.tmp" (
         for /f "tokens=1,2delims==" %%A in ('find "%blacklisted_psn%=" "lib\tmp\blacklisted_psn_hexadecimal.tmp"') do (
             if "%%~A"=="%blacklisted_psn%" (
