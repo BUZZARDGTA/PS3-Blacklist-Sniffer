@@ -42,6 +42,7 @@ set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
 set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit"
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
 setlocal EnableDelayedExpansion
+set "@LOOKUP_WINDOWS_VERSIONS=`10.0`6.3`6.2`6.1`"
 set "@LOOKUP_PSN_LENGTH=`136`1160`"
 set "@LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`"
 (set \N=^
@@ -70,10 +71,21 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.4 - 27/12/2021
+set VERSION=v2.0.5 - 27/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
+for /f "tokens=4-7delims=[.] " %%A in ('ver') do (
+    if /i "%%A"=="version" (
+        set "WINDOWS_VERSION=%%B.%%C"
+    ) else (
+        set "WINDOWS_VERSION=%%A.%%B"
+    )
+)
+if "!@LOOKUP_WINDOWS_VERSIONS:`%WINDOWS_VERSION%`=!"=="!@LOOKUP_WINDOWS_VERSIONS!" (
+    %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "Your computer does not reach the minimum Windows version compatible with !TITLE!.!\N!!\N!You need Windows 7 or higher." 69648 "!TITLE!"
+    exit
+)
 echo Searching for a new update ...
 call :UPDATER
 >nul 2>&1 sc query npcap || (
@@ -642,7 +654,7 @@ if defined PS3_MAC_ADDRESS (
 )
 echo Started capturing on network interface "!Interface_%CAPTURE_INTERFACE%!" ...
 echo:
-set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 162.244.53.174 and not net 162.244.53.175 and not net 4.68.83.171 and not net 20.40.183.0/24 and not net 20.188.217.0/24 and not net 20.193.9.0/24 and not net 44.239.105.0/24 and not net 44.240.54.0/24 and not net 52.25.207.0/24 and not net 52.27.10.0/24 and not net 52.32.157.0/24 and not net 52.33.65.0/24 and not net 52.33.207.0/24 and not net 52.34.172.0/24 and not net 52.36.6.0/24 and not net 52.37.233.0/24 and not net 52.37.45.0/24 and not net 52.37.102.0/24 and not net 52.37.139.0/24 and not net 52.37.199.0/24 and not net 52.37.242.0/24 and not net 52.37.243.0/24 and not net 52.39.46.0/24 and not net 52.40.62.0/24 and not net 52.139.168.0/24 and not net 52.139.169.0/24 and not net 54.68.83.0/24 and not net 80.67.169.0/24 and not net 172.16.0.0/12 and not net 185.56.65.0/24 and not net 192.81.241.0/24 and not net 192.81.245.0/24"
+set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 185.34.107.0/24 and not net 162.244.52.0/23 and not net 52.40.62.0/24"
 if defined CAPTURE_FILTER (
     if "!CAPTURE_FILTER:~-5!"==" and " (
         set "CAPTURE_FILTER=!CAPTURE_FILTER:~0,-5!"
