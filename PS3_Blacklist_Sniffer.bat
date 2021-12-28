@@ -71,7 +71,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.5 - 27/12/2021
+set VERSION=v2.0.6 - 28/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -783,6 +783,7 @@ if not defined skip_lookup_%ip% (
                     for %%A in ("^!blacklisted_psn_ascii_!psn_hexadecimal!^!") do (
                         set "blacklisted_psn=%%~A"
                     )
+                    set "blacklisted_detection_type=PSN Username"
                     call :BLACKLISTED_FOUND
                     exit /b 0
                 )
@@ -796,6 +797,7 @@ if not defined skip_static_%ip% (
     for /f "tokens=1,2delims==" %%A in ('find "=%ip%" "!WINDOWS_BLACKLIST_PATH!"') do (
         if "%ip%"=="%%~B" (
             set "blacklisted_psn=%%~A"
+            set "blacklisted_detection_type=Static IP"
             call :BLACKLISTED_FOUND
             exit /b 0
         )
@@ -839,6 +841,7 @@ if not defined skip_dyn_%ip% (
             )
             if !dynamic_iplookup_dif!==false (
                 set "blacklisted_psn=%%~A"
+                set "blacklisted_detection_type=Dynamic IP"
                 call :BLACKLISTED_FOUND
                 exit /b 0
             )
@@ -892,11 +895,11 @@ if !blacklisted_psn_list_counter! gtr 1 (
     set @ps3_psn_plurial_asterisk=
     set @psn_plurial_asterisk=
 )
-echo User!@psn_plurial_asterisk!:!@blacklisted_psn_list! ^| ReverseIP:%reverse_ip% ^| IP:%ip% ^| Port:%port% ^| Time:!datetime! ^| Country:!blacklisted_iplookup_countrycode_%ip%!
+echo User!@psn_plurial_asterisk!:!@blacklisted_psn_list! ^| ReverseIP:%reverse_ip% ^| IP:%ip% ^| Port:%port% ^| Time:!datetime! ^| Country:!blacklisted_iplookup_countrycode_%ip%! ^| Detection Type: !blacklisted_detection_type!
 :LOOP_WINDOWS_RESULTS_LOGGING_PATH
 if %WINDOWS_RESULTS_LOGGING%==true (
     >>"%WINDOWS_RESULTS_LOGGING_PATH%" (
-        echo User!@psn_plurial_asterisk!:!@blacklisted_psn_list! ^| ReverseIP:%reverse_ip% ^| IP:%ip% ^| Port:%port% ^| Time:!datetime! ^| Country:!blacklisted_iplookup_countrycode_%ip%!
+        echo User!@psn_plurial_asterisk!:!@blacklisted_psn_list! ^| ReverseIP:%reverse_ip% ^| IP:%ip% ^| Port:%port% ^| Time:!datetime! ^| Country:!blacklisted_iplookup_countrycode_%ip%! ^| Detection Type: !blacklisted_detection_type!
     ) || (
         call :CREATE_WINDOWS_RESULTS_LOGGING_FILE
         goto :LOOP_WINDOWS_RESULTS_LOGGING_PATH
@@ -923,7 +926,7 @@ if %WINDOWS_NOTIFICATIONS%==true (
         )
         if !windows_notifications_%ip%_seconds! geq %WINDOWS_NOTIFICATIONS_TIMER% (
             set windows_notifications_%ip%_t1=
-            %@MSGBOX% start /b cscript //nologo "lib\msgbox.vbs" "##### Blacklisted user detected at !hourtime:~0,5! #####!\N!!\N!User!@psn_plurial_asterisk!: !@blacklisted_psn_list!!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !blacklisted_iplookup_countrycode_%ip%!!\N!!\N!############# IP Lookup ##############!\N!!\N!Reverse IP: !blacklisted_iplookup_reverse_%ip%!!\N!Continent: !blacklisted_iplookup_continent_%ip%!!\N!Country: !blacklisted_iplookup_country_%ip%!!\N!City: !blacklisted_iplookup_city_%ip%!!\N!Organization: !blacklisted_iplookup_org_%ip%!!\N!ISP: !blacklisted_iplookup_isp_%ip%!!\N!AS: !blacklisted_iplookup_as_%ip%!!\N!AS Name: !blacklisted_iplookup_asname_%ip%!!\N!Proxy: !blacklisted_iplookup_proxy_2_%ip%!!\N!Type: !blacklisted_iplookup_type_%ip%!!\N!Mobile (cellular) connection: !blacklisted_iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !blacklisted_iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !blacklisted_iplookup_hosting_%ip%!" 69680 "!TITLE!"
+            %@MSGBOX% start /b cscript //nologo "lib\msgbox.vbs" "##### Blacklisted user detected at !hourtime:~0,5! #####!\N!!\N!User!@psn_plurial_asterisk!: !@blacklisted_psn_list!!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !blacklisted_iplookup_countrycode_%ip%!!\N!Detection Type: !blacklisted_detection_type!!\N!!\N!############# IP Lookup ##############!\N!!\N!Reverse IP: !blacklisted_iplookup_reverse_%ip%!!\N!Continent: !blacklisted_iplookup_continent_%ip%!!\N!Country: !blacklisted_iplookup_country_%ip%!!\N!City: !blacklisted_iplookup_city_%ip%!!\N!Organization: !blacklisted_iplookup_org_%ip%!!\N!ISP: !blacklisted_iplookup_isp_%ip%!!\N!AS: !blacklisted_iplookup_as_%ip%!!\N!AS Name: !blacklisted_iplookup_asname_%ip%!!\N!Proxy: !blacklisted_iplookup_proxy_2_%ip%!!\N!Type: !blacklisted_iplookup_type_%ip%!!\N!Mobile (cellular) connection: !blacklisted_iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !blacklisted_iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !blacklisted_iplookup_hosting_%ip%!" 69680 "!TITLE!"
             if not defined windows_notifications_%ip%_t1 (
                 call :TIMER_T1 windows_notifications_%ip%
             )
@@ -963,7 +966,7 @@ if defined PS3_IP_ADDRESS (
                                 set @PS3_NOTIFICATIONS_ABOVE_SOUND=
                             )
                         )
-                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
+                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
                     )
                     if not defined ps3_notifications_above_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_above_%ip%
