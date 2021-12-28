@@ -4,6 +4,7 @@
 
 * Track your blacklisted people new usernames and IPs.
 * Detect blacklisted people who are trying to connect in or who are already in your session.
+* You can even use this script without a jailbroken PS3. (only Windows notifications)
 
 **Tested and supported videogames:**
 
