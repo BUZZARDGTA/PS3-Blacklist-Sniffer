@@ -71,7 +71,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.6 - 28/12/2021
+set VERSION=v2.0.7 - 29/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -131,6 +131,7 @@ for %%A in (
     "PS3_IP_AND_MAC_ADDRESS_AUTOMATIC"
     "PS3_IP_ADDRESS"
     "PS3_MAC_ADDRESS"
+    "PS3_PROTECTION_RESTART_GAME"
     "PS3_NOTIFICATIONS"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND"
@@ -227,6 +228,13 @@ for %%A in (
                     set "x=%%~C"
                     call :CHECK_MAC x && (
                         set "%%~B=%%~C"
+                    )
+                )
+                if "%%~B"=="PS3_PROTECTION_RESTART_GAME" (
+                    for %%D in (true false) do (
+                        if /i "%%~C"=="%%D" (
+                            set "%%~B=%%~C"
+                        )
                     )
                 )
                 if "%%~B"=="PS3_NOTIFICATIONS" (
@@ -329,7 +337,7 @@ for %%A in (
         set generate_new_settings_file=true
     )
 )
-if not "!settings_number!"=="26" (
+if not "!settings_number!"=="27" (
     set generate_new_settings_file=true
 )
 if not defined WINDOWS_TSHARK_PATH (
@@ -345,6 +353,7 @@ for %%A in (
     "WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL=true"
     "WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER=120"
     "PS3_IP_AND_MAC_ADDRESS_AUTOMATIC=true"
+    "PS3_PROTECTION_RESTART_GAME=false"
     "PS3_NOTIFICATIONS=true"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON=22"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND=5"
@@ -358,7 +367,7 @@ for %%A in (
     "PS3_NOTIFICATIONS_BOTTUM_SOUND=8"
     "PS3_NOTIFICATIONS_BOTTUM_TIMER=0"
     "PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL=true"
-    "PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER=1"
+    "PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER=3"
 ) do (
     for /f "tokens=1*delims==" %%B in ("%%~A") do (
         if not defined %%~B (
@@ -934,6 +943,9 @@ if %WINDOWS_NOTIFICATIONS%==true (
     )
 )
 if defined PS3_IP_ADDRESS (
+    if %PS3_PROTECTION_RESTART_GAME%==true (
+        call :PS3_PROTECTION_RESTART_GAME_STEP_1
+    )
     if %PS3_NOTIFICATIONS%==true (
         if %PS3_NOTIFICATIONS_ABOVE%==true (
             set pause_ps3_notifications_above=false
@@ -1006,6 +1018,33 @@ if defined PS3_IP_ADDRESS (
             )
         )
     )
+    if %PS3_PROTECTION_RESTART_GAME%==true (
+        if %PS3_NOTIFICATIONS%==true (
+            if %PS3_NOTIFICATIONS_ABOVE%==true (
+                >nul timeout /t 10
+            ) else if %PS3_NOTIFICATIONS_BOTTUM%==true (
+                >nul timeout /t 5
+            )
+        )
+        call :PS3_PROTECTION_RESTART_GAME_STEP_2
+    )
+)
+exit /b
+
+:PS3_PROTECTION_RESTART_GAME_STEP_1
+>nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$exit"
+>nul timeout /t 10
+curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" && (
+    >nul timeout /t 3
+    goto :PS3_PROTECTION_RESTART_GAME_STEP_1
+)
+exit /b
+
+:PS3_PROTECTION_RESTART_GAME_STEP_2
+>nul curl -fks "http://%PS3_IP_ADDRESS%/play.ps3"
+>nul timeout /t 5
+curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" || (
+    goto :PS3_PROTECTION_RESTART_GAME_STEP_2
 )
 exit /b
 
@@ -1443,6 +1482,10 @@ exit /b
     echo ;;Settings^>Network Settings^>Settings and Connection Status List^>MAC Address
     echo ;;Valid example value:'xx:xx:xx:xx:xx:xx'
     echo ;;
+    echo ;;^<PROTECTION^>
+    echo ;;Action to perform when a blacklisted user is found.
+    echo ;;There is currently only 'Restart Game' protection.
+    echo ;;
     echo ;;^<PACKETS_INTERVAL^>
     echo ;;Time interval between which this will not display a notification
     echo ;;if the packets are still received from the blacklisted user.
@@ -1473,6 +1516,7 @@ exit /b
     echo PS3_IP_AND_MAC_ADDRESS_AUTOMATIC=!PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!
     echo PS3_IP_ADDRESS=!PS3_IP_ADDRESS!
     echo PS3_MAC_ADDRESS=!PS3_MAC_ADDRESS!
+    echo PS3_PROTECTION_RESTART_GAME=!PS3_PROTECTION_RESTART_GAME!
     echo PS3_NOTIFICATIONS=!PS3_NOTIFICATIONS!
     echo PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!
     echo PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!
