@@ -71,7 +71,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.7 - 29/12/2021
+set VERSION=v2.0.8 - 29/12/2021
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -113,6 +113,9 @@ for %%A in (
     "@PS3_NOTIFICATIONS_ABOVE_SOUND"
     "settings_number"
     "notepad_pid"
+    "ps3_protection_game_exit"
+    "ps3_protection_xmb_timeout_above"
+    "ps3_protection_xmb_timeout_bottum"
 ) do (
     if defined %%~A (
         set %%~A=
@@ -725,6 +728,21 @@ for /l %%? in () do (
                     )
                 )
             )
+            if defined ps3_protection_game_exit (
+                set ps3_protection_game_exit=
+                if %PS3_PROTECTION_RESTART_GAME%==true (
+                    if %PS3_NOTIFICATIONS%==true (
+                        if %PS3_NOTIFICATIONS_ABOVE%==true (
+                            >nul timeout /t !ps3_protection_xmb_timeout_above! /nobreak
+                            set ps3_protection_xmb_timeout_above=
+                        ) else if %PS3_NOTIFICATIONS_BOTTUM%==true (
+                            >nul timeout /t !ps3_protection_xmb_timeout_bottum! /nobreak
+                            set ps3_protection_xmb_timeout_bottum=
+                        )
+                    )
+                    call :PS3_GAME_START
+                )
+            )
         ) else (
             call :CREATE_WINDOWS_BLACKLIST_FILE
         )
@@ -943,8 +961,10 @@ if %WINDOWS_NOTIFICATIONS%==true (
     )
 )
 if defined PS3_IP_ADDRESS (
-    if %PS3_PROTECTION_RESTART_GAME%==true (
-        call :PS3_PROTECTION_RESTART_GAME_STEP_1
+    if not defined ps3_protection_game_exit (
+        if %PS3_PROTECTION_RESTART_GAME%==true (
+            call :PS3_GAME_EXIT
+        )
     )
     if %PS3_NOTIFICATIONS%==true (
         if %PS3_NOTIFICATIONS_ABOVE%==true (
@@ -980,6 +1000,7 @@ if defined PS3_IP_ADDRESS (
                         )
                         >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
                     )
+                    set /a ps3_protection_xmb_timeout_above+=8
                     if not defined ps3_notifications_above_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_above_%ip%
                     )
@@ -1011,6 +1032,7 @@ if defined PS3_IP_ADDRESS (
                     if not %PS3_NOTIFICATIONS_BOTTUM_SOUND%==false (
                         >nul curl -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTUM_SOUND%"
                     )
+                    set /a ps3_protection_xmb_timeout_bottum+=5
                     if not defined ps3_notifications_bottum_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_bottum_%ip%
                     )
@@ -1018,33 +1040,6 @@ if defined PS3_IP_ADDRESS (
             )
         )
     )
-    if %PS3_PROTECTION_RESTART_GAME%==true (
-        if %PS3_NOTIFICATIONS%==true (
-            if %PS3_NOTIFICATIONS_ABOVE%==true (
-                >nul timeout /t 10
-            ) else if %PS3_NOTIFICATIONS_BOTTUM%==true (
-                >nul timeout /t 5
-            )
-        )
-        call :PS3_PROTECTION_RESTART_GAME_STEP_2
-    )
-)
-exit /b
-
-:PS3_PROTECTION_RESTART_GAME_STEP_1
->nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$exit"
->nul timeout /t 10
-curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" && (
-    >nul timeout /t 3
-    goto :PS3_PROTECTION_RESTART_GAME_STEP_1
-)
-exit /b
-
-:PS3_PROTECTION_RESTART_GAME_STEP_2
->nul curl -fks "http://%PS3_IP_ADDRESS%/play.ps3"
->nul timeout /t 5
-curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" || (
-    goto :PS3_PROTECTION_RESTART_GAME_STEP_2
 )
 exit /b
 
@@ -1061,6 +1056,23 @@ exit /b
     >>"!WINDOWS_BLACKLIST_PATH!" (
         echo !%1!=%ip%
     ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+)
+exit /b
+
+:PS3_GAME_EXIT
+>nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$exit"
+>nul timeout /t 13 /nobreak
+curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" && (
+    goto :PS3_GAME_EXIT
+)
+set ps3_protection_game_exit=1
+exit /b
+
+:PS3_GAME_START
+>nul curl -fks "http://%PS3_IP_ADDRESS%/play.ps3"
+>nul timeout /t 8 /nobreak
+curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" || (
+    goto :PS3_GAME_START
 )
 exit /b
 
