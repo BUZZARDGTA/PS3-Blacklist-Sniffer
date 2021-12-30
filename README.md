@@ -18,6 +18,7 @@
 | Call of Duty: Black Ops 3 | Yes               | No                  |
 | Call of Duty: Black Ops 2 | Yes               | No                  |
 | Skate 3                   | Yes               | No                  |
+| Destiny                   | Yes               | No                  |
 
 ## Requirements
 
