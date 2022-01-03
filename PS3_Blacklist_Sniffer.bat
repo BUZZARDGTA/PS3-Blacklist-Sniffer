@@ -71,7 +71,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.8 - 29/12/2021
+set VERSION=v2.0.9 - 03/01/2022
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -113,9 +113,6 @@ for %%A in (
     "@PS3_NOTIFICATIONS_ABOVE_SOUND"
     "settings_number"
     "notepad_pid"
-    "ps3_protection_game_exit"
-    "ps3_protection_xmb_timeout_above"
-    "ps3_protection_xmb_timeout_bottum"
 ) do (
     if defined %%~A (
         set %%~A=
@@ -134,7 +131,7 @@ for %%A in (
     "PS3_IP_AND_MAC_ADDRESS_AUTOMATIC"
     "PS3_IP_ADDRESS"
     "PS3_MAC_ADDRESS"
-    "PS3_PROTECTION_RESTART_GAME"
+    "PS3_PROTECTION"
     "PS3_NOTIFICATIONS"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND"
@@ -144,11 +141,11 @@ for %%A in (
     "PS3_NOTIFICATIONS_ABOVE_TIMER"
     "PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL"
     "PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER"
-    "PS3_NOTIFICATIONS_BOTTUM"
-    "PS3_NOTIFICATIONS_BOTTUM_SOUND"
-    "PS3_NOTIFICATIONS_BOTTUM_TIMER"
-    "PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL"
-    "PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER"
+    "PS3_NOTIFICATIONS_BOTTOM"
+    "PS3_NOTIFICATIONS_BOTTOM_SOUND"
+    "PS3_NOTIFICATIONS_BOTTOM_TIMER"
+    "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL"
+    "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER"
 ) do (
     if defined %%~A (
         set %%~A=
@@ -233,8 +230,8 @@ for %%A in (
                         set "%%~B=%%~C"
                     )
                 )
-                if "%%~B"=="PS3_PROTECTION_RESTART_GAME" (
-                    for %%D in (true false) do (
+                if "%%~B"=="PS3_PROTECTION" (
+                    for %%D in (false Reload_Game Exit_Game Restart_PS3 Shutdown_PS3) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
@@ -301,34 +298,34 @@ for %%A in (
                         set "%%~B=!x!"
                     )
                 )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTUM" (
+                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
                 )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTUM_SOUND" (
+                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_SOUND" (
                     for %%D in (false 0 1 2 3 4 5 6 7 8 9) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
                 )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTUM_TIMER" (
+                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
                     )
                 )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL" (
+                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
                 )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER" (
+                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
@@ -356,7 +353,7 @@ for %%A in (
     "WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL=true"
     "WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER=120"
     "PS3_IP_AND_MAC_ADDRESS_AUTOMATIC=true"
-    "PS3_PROTECTION_RESTART_GAME=false"
+    "PS3_PROTECTION=false"
     "PS3_NOTIFICATIONS=true"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON=22"
     "PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND=5"
@@ -366,15 +363,23 @@ for %%A in (
     "PS3_NOTIFICATIONS_ABOVE_TIMER=0"
     "PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL=true"
     "PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER=120"
-    "PS3_NOTIFICATIONS_BOTTUM=true"
-    "PS3_NOTIFICATIONS_BOTTUM_SOUND=8"
-    "PS3_NOTIFICATIONS_BOTTUM_TIMER=0"
-    "PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL=true"
-    "PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER=3"
+    "PS3_NOTIFICATIONS_BOTTOM=true"
+    "PS3_NOTIFICATIONS_BOTTOM_SOUND=8"
+    "PS3_NOTIFICATIONS_BOTTOM_TIMER=0"
+    "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL=true"
+    "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER=3"
 ) do (
     for /f "tokens=1*delims==" %%B in ("%%~A") do (
         if not defined %%~B (
             set "%%~B=%%~C"
+            set generate_new_settings_file=true
+        )
+    )
+)
+if %PS3_NOTIFICATIONS%==true (
+    if %PS3_NOTIFICATIONS_ABOVE%==false (
+        if %PS3_NOTIFICATIONS_BOTTOM%==false (
+            set PS3_NOTIFICATIONS=false
             set generate_new_settings_file=true
         )
     )
@@ -666,7 +671,7 @@ if defined PS3_MAC_ADDRESS (
 )
 echo Started capturing on network interface "!Interface_%CAPTURE_INTERFACE%!" ...
 echo:
-set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 185.34.107.0/24 and not net 162.244.52.0/23 and not net 52.40.62.0/24"
+set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 3.237.117.0/24 and not net 52.40.62.0/24 and not net 162.244.52.0/23 and not net 185.34.107.0/24"
 if defined CAPTURE_FILTER (
     if "!CAPTURE_FILTER:~-5!"==" and " (
         set "CAPTURE_FILTER=!CAPTURE_FILTER:~0,-5!"
@@ -680,6 +685,7 @@ for /l %%? in () do (
                 "skip_static_"
                 "skip_lookup_"
                 "skip_dyn_"
+                "skip_ps3_protection"
             ) do (
                 >nul 2>&1 set %%~A && (
                     for /f "delims==" %%B in ('set %%~A') do (
@@ -726,21 +732,6 @@ for /l %%? in () do (
                             )
                         )
                     )
-                )
-            )
-            if defined ps3_protection_game_exit (
-                set ps3_protection_game_exit=
-                if %PS3_PROTECTION_RESTART_GAME%==true (
-                    if %PS3_NOTIFICATIONS%==true (
-                        if %PS3_NOTIFICATIONS_ABOVE%==true (
-                            >nul timeout /t !ps3_protection_xmb_timeout_above! /nobreak
-                            set ps3_protection_xmb_timeout_above=
-                        ) else if %PS3_NOTIFICATIONS_BOTTUM%==true (
-                            >nul timeout /t !ps3_protection_xmb_timeout_bottum! /nobreak
-                            set ps3_protection_xmb_timeout_bottum=
-                        )
-                    )
-                    call :PS3_GAME_START
                 )
             )
         ) else (
@@ -961,9 +952,30 @@ if %WINDOWS_NOTIFICATIONS%==true (
     )
 )
 if defined PS3_IP_ADDRESS (
-    if not defined ps3_protection_game_exit (
-        if %PS3_PROTECTION_RESTART_GAME%==true (
-            call :PS3_GAME_EXIT
+    if not defined skip_ps3_protection (
+        set skip_ps3_protection=1
+        if not %PS3_PROTECTION%==false (
+            if %PS3_PROTECTION%==Reload_Game (
+                >nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$reloadgame" && (
+                    if %PS3_NOTIFICATIONS%==true (
+                        >nul timeout /t 25 /nobreak
+                    )
+                )
+            ) else if %PS3_PROTECTION%==Exit_Game (
+                >nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$exit" && (
+                    if %PS3_NOTIFICATIONS%==true (
+                        >nul timeout /t 15 /nobreak
+                    )
+                )
+            ) else if %PS3_PROTECTION%==Restart_PS3 (
+                >nul curl -fks "http://%PS3_IP_ADDRESS%/restart.ps3" && (
+                    exit /b
+                )
+            ) else if %PS3_PROTECTION%==Shutdown_PS3 (
+                >nul curl -fks "http://%PS3_IP_ADDRESS%/shutdown.ps3" && (
+                    exit /b
+                )
+            )
         )
     )
     if %PS3_NOTIFICATIONS%==true (
@@ -1000,41 +1012,39 @@ if defined PS3_IP_ADDRESS (
                         )
                         >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
                     )
-                    set /a ps3_protection_xmb_timeout_above+=8
                     if not defined ps3_notifications_above_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_above_%ip%
                     )
                 )
             )
         )
-        if %PS3_NOTIFICATIONS_BOTTUM%==true (
-            set pause_ps3_notifications_bottum=false
-            if %PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL%==true (
-                if defined ps3_notifications_bottum_packets_interval_%ip%_t1 (
-                    call :TIMER_T2 ps3_notifications_bottum_packets_interval_%ip%
+        if %PS3_NOTIFICATIONS_BOTTOM%==true (
+            set pause_ps3_notifications_bottom=false
+            if %PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL%==true (
+                if defined ps3_notifications_bottom_packets_interval_%ip%_t1 (
+                    call :TIMER_T2 ps3_notifications_bottom_packets_interval_%ip%
                 ) else (
-                    set ps3_notifications_bottum_packets_interval_%ip%_seconds=%PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER%
+                    set ps3_notifications_bottom_packets_interval_%ip%_seconds=%PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER%
                 )
-                if !ps3_notifications_bottum_packets_interval_%ip%_seconds! lss %PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER% (
-                    set pause_ps3_notifications_bottum=true
+                if !ps3_notifications_bottom_packets_interval_%ip%_seconds! lss %PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER% (
+                    set pause_ps3_notifications_bottom=true
                 )
-                call :TIMER_T1 ps3_notifications_bottum_packets_interval_%ip%
+                call :TIMER_T1 ps3_notifications_bottom_packets_interval_%ip%
             )
-            if !pause_ps3_notifications_bottum!==false (
-                if defined ps3_notifications_bottum_%ip%_t1 (
-                    call :TIMER_T2 ps3_notifications_bottum_%ip%
+            if !pause_ps3_notifications_bottom!==false (
+                if defined ps3_notifications_bottom_%ip%_t1 (
+                    call :TIMER_T2 ps3_notifications_bottom_%ip%
                 ) else (
-                    set ps3_notifications_bottum_%ip%_seconds=%PS3_NOTIFICATIONS_BOTTUM_TIMER%
+                    set ps3_notifications_bottom_%ip%_seconds=%PS3_NOTIFICATIONS_BOTTOM_TIMER%
                 )
-                if !ps3_notifications_bottum_%ip%_seconds! geq %PS3_NOTIFICATIONS_BOTTUM_TIMER% (
-                    set ps3_notifications_bottum_%ip%_t1=
+                if !ps3_notifications_bottom_%ip%_seconds! geq %PS3_NOTIFICATIONS_BOTTOM_TIMER% (
+                    set ps3_notifications_bottom_%ip%_t1=
                     >nul curl -fkLs "http://%PS3_IP_ADDRESS%/popup.ps3*Blacklisted+user!@ps3_psn_plurial_asterisk!%%3A+!@ps3_blacklisted_psn_list!+connected..."
-                    if not %PS3_NOTIFICATIONS_BOTTUM_SOUND%==false (
-                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTUM_SOUND%"
+                    if not %PS3_NOTIFICATIONS_BOTTOM_SOUND%==false (
+                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTOM_SOUND%"
                     )
-                    set /a ps3_protection_xmb_timeout_bottum+=5
-                    if not defined ps3_notifications_bottum_%ip%_t1 (
-                        call :TIMER_T1 ps3_notifications_bottum_%ip%
+                    if not defined ps3_notifications_bottom_%ip%_t1 (
+                        call :TIMER_T1 ps3_notifications_bottom_%ip%
                     )
                 )
             )
@@ -1056,23 +1066,6 @@ exit /b
     >>"!WINDOWS_BLACKLIST_PATH!" (
         echo !%1!=%ip%
     ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
-)
-exit /b
-
-:PS3_GAME_EXIT
->nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$exit"
->nul timeout /t 13 /nobreak
-curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" && (
-    goto :PS3_GAME_EXIT
-)
-set ps3_protection_game_exit=1
-exit /b
-
-:PS3_GAME_START
->nul curl -fks "http://%PS3_IP_ADDRESS%/play.ps3"
->nul timeout /t 8 /nobreak
-curl -fks "http://%PS3_IP_ADDRESS%/cpursx.ps3" | >nul find /i "<label title=""Play"">" || (
-    goto :PS3_GAME_START
 )
 exit /b
 
@@ -1496,7 +1489,11 @@ exit /b
     echo ;;
     echo ;;^<PROTECTION^>
     echo ;;Action to perform when a blacklisted user is found.
-    echo ;;There is currently only 'Restart Game' protection.
+    echo ;;Set it to 'false' to disable it or pick one from:
+    echo ;;'Reload_Game'
+    echo ;;'Exit_Game'
+    echo ;;'Restart_PS3'
+    echo ;;'Shutdown_PS3'
     echo ;;
     echo ;;^<PACKETS_INTERVAL^>
     echo ;;Time interval between which this will not display a notification
@@ -1528,7 +1525,7 @@ exit /b
     echo PS3_IP_AND_MAC_ADDRESS_AUTOMATIC=!PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!
     echo PS3_IP_ADDRESS=!PS3_IP_ADDRESS!
     echo PS3_MAC_ADDRESS=!PS3_MAC_ADDRESS!
-    echo PS3_PROTECTION_RESTART_GAME=!PS3_PROTECTION_RESTART_GAME!
+    echo PS3_PROTECTION=!PS3_PROTECTION!
     echo PS3_NOTIFICATIONS=!PS3_NOTIFICATIONS!
     echo PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!
     echo PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!
@@ -1538,11 +1535,11 @@ exit /b
     echo PS3_NOTIFICATIONS_ABOVE_TIMER=!PS3_NOTIFICATIONS_ABOVE_TIMER!
     echo PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL=!PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL!
     echo PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER=!PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER!
-    echo PS3_NOTIFICATIONS_BOTTUM=!PS3_NOTIFICATIONS_BOTTUM!
-    echo PS3_NOTIFICATIONS_BOTTUM_SOUND=!PS3_NOTIFICATIONS_BOTTUM_SOUND!
-    echo PS3_NOTIFICATIONS_BOTTUM_TIMER=!PS3_NOTIFICATIONS_BOTTUM_TIMER!
-    echo PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL=!PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL!
-    echo PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER=!PS3_NOTIFICATIONS_BOTTUM_PACKETS_INTERVAL_TIMER!
+    echo PS3_NOTIFICATIONS_BOTTOM=!PS3_NOTIFICATIONS_BOTTOM!
+    echo PS3_NOTIFICATIONS_BOTTOM_SOUND=!PS3_NOTIFICATIONS_BOTTOM_SOUND!
+    echo PS3_NOTIFICATIONS_BOTTOM_TIMER=!PS3_NOTIFICATIONS_BOTTOM_TIMER!
+    echo PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL=!PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL!
+    echo PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER=!PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER!
 ) || (
     set "?=Settings.ini"
     %@ADMINISTRATOR_MANIFEST_REQUIRED%
