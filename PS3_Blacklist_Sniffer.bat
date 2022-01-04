@@ -71,7 +71,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.0.9 - 03/01/2022
+set VERSION=v2.1.0 - 04/01/2022
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -95,7 +95,10 @@ call :UPDATER
         exit
     )
 )
-for %%A in ("ARP.EXE" "curl.exe") do (
+for %%A in (
+    "ARP.EXE"
+    "curl.exe"
+) do (
     >nul 2>&1 where "%%~A" || (
         %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE!"
         exit
@@ -104,15 +107,15 @@ for %%A in ("ARP.EXE" "curl.exe") do (
 :SETUP
 echo:
 echo Applying your custom settings from 'Settings.ini' ...
-set ps3_connected_notification=false
-set generate_new_settings_file=false
 for %%A in (
     "@WINDOWS_TSHARK_STDERR"
     "@PS3_IP_ADDRESS"
     "@PS3_MAC_ADDRESS"
     "@PS3_NOTIFICATIONS_ABOVE_SOUND"
     "settings_number"
+    "generate_new_settings_file"
     "notepad_pid"
+    "ps3_connected_notification"
 ) do (
     if defined %%~A (
         set %%~A=
@@ -146,6 +149,7 @@ for %%A in (
     "PS3_NOTIFICATIONS_BOTTOM_TIMER"
     "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL"
     "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER"
+    "DETECTION_TYPE_DYNAMIC_IP_PRECISION"
 ) do (
     if defined %%~A (
         set %%~A=
@@ -331,14 +335,21 @@ for %%A in (
                         set "%%~B=!x!"
                     )
                 )
+                if "%%~B"=="DETECTION_TYPE_DYNAMIC_IP_PRECISION" (
+                    for %%D in (1 2 3) do (
+                        if /i "%%~C"=="%%D" (
+                            set "%%~B=%%~C"
+                        )
+                    )
+                )
             )
         )
     ) else (
-        set generate_new_settings_file=true
+        set generate_new_settings_file=1
     )
 )
-if not "!settings_number!"=="27" (
-    set generate_new_settings_file=true
+if not "!settings_number!"=="28" (
+    set generate_new_settings_file=1
 )
 if not defined WINDOWS_TSHARK_PATH (
     call :CREATE_WINDOWS_TSHARK_PATH
@@ -368,11 +379,12 @@ for %%A in (
     "PS3_NOTIFICATIONS_BOTTOM_TIMER=0"
     "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL=true"
     "PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER=3"
+    "DETECTION_TYPE_DYNAMIC_IP_PRECISION=3"
 ) do (
     for /f "tokens=1*delims==" %%B in ("%%~A") do (
         if not defined %%~B (
             set "%%~B=%%~C"
-            set generate_new_settings_file=true
+            set generate_new_settings_file=1
         )
     )
 )
@@ -380,16 +392,38 @@ if %PS3_NOTIFICATIONS%==true (
     if %PS3_NOTIFICATIONS_ABOVE%==false (
         if %PS3_NOTIFICATIONS_BOTTOM%==false (
             set PS3_NOTIFICATIONS=false
-            set generate_new_settings_file=true
+            set generate_new_settings_file=1
         )
     )
 )
-if !generate_new_settings_file!==true (
+if defined generate_new_settings_file (
     echo:
     echo Correct reconstruction of 'Settings.ini' ...
     call :CREATE_SETTINGS_FILE
     goto :SETUP
 )
+title Capture network interface selection - !TITLE!
+:CHOOSE_INTERFACE
+cls
+echo:
+"!WINDOWS_TSHARK_PATH!" -D
+set x=
+for /f "tokens=2delims=()" %%A in ('"!WINDOWS_TSHARK_PATH!" -D') do (
+    set /a x+=1
+    set "Interface_!x!=%%A"
+)
+echo:
+set CAPTURE_INTERFACE=
+set /p "CAPTURE_INTERFACE=Select your desired capture network interface (1,1,!x!): "
+for /l %%A in (1,1,!x!) do (
+    if "%%A"=="!CAPTURE_INTERFACE!" (
+        goto :START
+    )
+)
+goto :CHOOSE_INTERFACE
+:START
+cls
+title Cleaning temporary files - !TITLE!
 echo:
 echo Cleaning incorrect, invalid or unnecessary temporary !TITLE! files ...
 if exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
@@ -471,75 +505,64 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
         )
     )
 )
-title Capture network interface selection - !TITLE!
-:CHOOSE_INTERFACE
-cls
-echo:
-"!WINDOWS_TSHARK_PATH!" -D
-set x=
-for /f "tokens=2delims=()" %%A in ('"!WINDOWS_TSHARK_PATH!" -D') do (
-    set /a x+=1
-    set "Interface_!x!=%%A"
-)
-echo:
-set CAPTURE_INTERFACE=
-set /p "CAPTURE_INTERFACE=Select your desired capture network interface (1,1,!x!): "
-for /l %%A in (1,1,!x!) do (
-    if "%%A"=="!CAPTURE_INTERFACE!" (
-        goto :SCAN
-    )
-)
-goto :CHOOSE_INTERFACE
-:SCAN
-title !TITLE!
-cls
+title Initializing addresses and establishing connection to your PS3 console - !TITLE!
 echo:
 if !PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!==true (
     echo Initializing addresses and establishing connection to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
-    set first_2=1
-    set obtain_valid_addresses=1
+    set /a search_ps3_ip_address=1, first_2=1
     call :PS3_IP_AND_MAC_ADDRESS_AUTOMATIC_ARP_ATTRIBUTION
     if defined PS3_IP_ADDRESS (
         call :CHECK_WEBMAN_MOD_CONNECTION PS3_IP_ADDRESS PS3_MAC_ADDRESS && (
+            set search_ps3_ip_address=
             set first_2=
-            set obtain_valid_addresses=
         )
     )
     for /f "tokens=1,2" %%A in ('ARP -a') do (
-        set "x1=%%~A"
-        set "x2=%%~B"
-        set "x2=!x2:-=:!"
-        call :CHECK_IP x1 && (
-            set local_ip_!x1!=true
-            if defined obtain_valid_addresses (
-                call :CHECK_MAC x2 && (
-                    if defined first_2 (
-                        set first_2=
-                        echo PS3 console IP and MAC addresses not found.
-                        echo Attempting the automatic detection of your PS3 console ...
-                        echo:
-                    )
-                    echo Trying connection on local: "!x1!"
-                    call :CHECK_WEBMAN_MOD_CONNECTION x1 x2 && (
-                        set obtain_valid_addresses=
-                        set "PS3_IP_ADDRESS=!x1!"
-                        set "PS3_MAC_ADDRESS=!x2!"
-                        call :CREATE_SETTINGS_FILE
+        if not "%%~A"=="" (
+            if not "%%~B"=="" (
+                set "x1=%%~A"
+                call :CHECK_IP x1 && (
+                    set "local_ip_!x1!=1"
+                    set "x2=%%~B"
+                    set "x2=!x2:-=:!"
+                    if defined search_ps3_ip_address (
+                        call :CHECK_MAC x2 && (
+                            if defined first_2 (
+                                set first_2=
+                                echo PS3 console IP and MAC addresses not found.
+                                echo Attempting the automatic detection of your PS3 console ...
+                                echo:
+                            )
+                            echo Trying connection on local: "!x1!"
+                            call :CHECK_WEBMAN_MOD_CONNECTION x1 x2 && (
+                                set search_ps3_ip_address=
+                                set "PS3_IP_ADDRESS=!x1!"
+                                set "PS3_MAC_ADDRESS=!x2!"
+                                call :CREATE_SETTINGS_FILE
+                            )
+                        )
                     )
                 )
             )
         )
     )
-    for %%A in (first_2 obtain_valid_addresses x1 x2) do set %%A=
+    for %%A in (
+        "search_ps3_ip_address"
+        "first_2"
+        "x1"
+        "x2"
+    ) do (
+        set %%~A=
+    )
 ) else if defined PS3_IP_ADDRESS (
     echo Establishing connection to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
     call :CHECK_WEBMAN_MOD_CONNECTION PS3_IP_ADDRESS PS3_MAC_ADDRESS
 )
-title Sniffin' my babies IPs.   ^|IP:!PS3_IP_ADDRESS!^|   ^|MAC:!PS3_MAC_ADDRESS!^|   ^|Interface:!Interface_%CAPTURE_INTERFACE%!^| - !TITLE!
+title Computing ascii PSN usernames to hexadecimal in memory - !TITLE!
 :LOOP_BLACKLIST_FILE_EMPTY
 cls
 echo:
-if !ps3_connected_notification!==true (
+if defined ps3_connected_notification (
     echo Successfully connected to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
 ) else (
     echo Error: Unable to connect to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
@@ -569,7 +592,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
         for %%C in (
             "blacklisted_psn_disp"
             "blacklisted_ip_disp"
-            "result_found"
+            "invalid_result_found"
         ) do (
             if defined %%~C (
                 set %%~C=
@@ -584,22 +607,22 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
             )
             <nul set /p="Processing blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] ...                              !\R!"
             call :ASCII_TO_HEXADECIMAL || (
-                set "blacklisted_psn_invalid_%%~A=true"
-                set result_found=1
+                set /a "blacklisted_psn_invalid_%%~A=1", invalid_result_found=1
                 <nul set /p="Blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] does not contain a valid PSN username."
                 echo:
             )
             if not "%%~B"=="" (
                 call :CHECK_IP blacklisted_ip || (
-                    set "blacklisted_ip_invalid_%%~A=true"
-                    set result_found=1
+                    set /a "blacklisted_ip_invalid_%%~A=1", invalid_result_found=1
                     <nul set /p="Blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] does not contain a valid IP address."
                     echo:
                 )
             )
         )
     )
-    if not defined result_found (
+    if defined invalid_result_found (
+        set invalid_result_found=
+    ) else (
         <nul set /p=".!\B!                                                                   "
     )
     for %%A in (
@@ -669,14 +692,15 @@ if defined PS3_IP_ADDRESS (
 if defined PS3_MAC_ADDRESS (
     set "@PS3_MAC_ADDRESS=ether dst or src !PS3_MAC_ADDRESS! and "
 )
-echo Started capturing on network interface "!Interface_%CAPTURE_INTERFACE%!" ...
-echo:
 set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 3.237.117.0/24 and not net 52.40.62.0/24 and not net 162.244.52.0/23 and not net 185.34.107.0/24"
 if defined CAPTURE_FILTER (
     if "!CAPTURE_FILTER:~-5!"==" and " (
         set "CAPTURE_FILTER=!CAPTURE_FILTER:~0,-5!"
     )
 )
+title Sniffin' my babies IPs.   ^|IP:!PS3_IP_ADDRESS!^|   ^|MAC:!PS3_MAC_ADDRESS!^|   ^|Interface:!Interface_%CAPTURE_INTERFACE%!^| - !TITLE!
+echo Started capturing on network interface "!Interface_%CAPTURE_INTERFACE%!" ...
+echo:
 for /l %%? in () do (
     if exist "!WINDOWS_TSHARK_PATH!" (
         if exist "!WINDOWS_BLACKLIST_PATH!" (
@@ -684,7 +708,7 @@ for /l %%? in () do (
                 "blacklisted_found_"
                 "skip_static_"
                 "skip_lookup_"
-                "skip_dyn_"
+                "skip_dynamic_"
                 "skip_ps3_protection"
             ) do (
                 >nul 2>&1 set %%~A && (
@@ -753,40 +777,41 @@ if defined blacklisted_found_%ip% (
 )
 if defined skip_static_%ip% (
     if defined skip_lookup_%ip% (
-        if defined skip_dyn_%ip% (
+        if defined skip_dynamic_%ip% (
             exit /b 0
         )
     )
 )
 if "%ip:~0,8%"=="192.168." (
-    set "local_ip_%ip%=true"
+    set "local_ip_%ip%=1"
     exit /b 0
 ) else if "%ip:~0,3%"=="10." (
-    set "local_ip_%ip%=true"
+    set "local_ip_%ip%=1"
     exit /b 0
 ) else if "%ip:~0,4%"=="172." (
     for /l %%A in (16,1,31) do (
         if "%ip:~4,3%"=="%%~A." (
-            set "local_ip_%ip%=true"
+            set "local_ip_%ip%=1"
             exit /b 0
         )
     )
 ) else if "%ip:~0,4%"=="100." (
     for /l %%A in (64,1,99) do (
         if "%ip:~4,3%"=="%%~A." (
-            set "local_ip_%ip%=true"
+            set "local_ip_%ip%=1"
             exit /b 0
         )
     )
     for /l %%A in (100,1,127) do (
         if "%ip:~4,4%"=="%%~A." (
-            set "local_ip_%ip%=true"
+            set "local_ip_%ip%=1"
             exit /b 0
         )
     )
 )
 set psn_ascii=
 if not defined skip_lookup_%ip% (
+    set "skip_lookup_%ip%=1"
     if not "!@LOOKUP_PSN_LENGTH:`%frame_len%`=!"=="!@LOOKUP_PSN_LENGTH!" (
         if not "!hexadecimal_packet:FF83FFFEFFFE=!"=="!hexadecimal_packet!" (
             if not "!hexadecimal_packet:707333=!"=="!hexadecimal_packet!" (
@@ -806,12 +831,12 @@ if not defined skip_lookup_%ip% (
                     exit /b 0
                 )
                 call :HEXADECIMAL_TO_ASCII
-                set skip_lookup_%ip%=true
             )
         )
     )
 )
 if not defined skip_static_%ip% (
+    set "skip_static_%ip%=1"
     for /f "tokens=1,2delims==" %%A in ('find "=%ip%" "!WINDOWS_BLACKLIST_PATH!"') do (
         if "%ip%"=="%%~B" (
             set "blacklisted_psn=%%~A"
@@ -820,52 +845,69 @@ if not defined skip_static_%ip% (
             exit /b 0
         )
     )
-    set skip_static_%ip%=true
 )
-if not defined skip_dyn_%ip% (
-    for /f "tokens=1-3delims=." %%A in ("%ip%") do (
-        set "dynamic_ip=%%~A.%%~B"
+if not defined skip_dynamic_%ip% (
+    set "skip_dynamic_%ip%=1"
+    call :DETECTION_TYPE_FORM_PRECISION ip dynamic_ip
+    >nul 2>&1 set skip_dynamic_try_ && (
+        for /f "delims==" %%A in ('set skip_dynamic_try_') do (
+            set "%%~A="
+        )
     )
     for /f "tokens=1,2delims==" %%A in ('find "=!dynamic_ip!" "!WINDOWS_BLACKLIST_PATH!"') do (
-        for /f "tokens=1-3delims=." %%C in ("%%~B") do (
-            set "blacklisted_dynamic_ip=%%~C.%%~D"
-        )
-        if "!dynamic_ip!"=="!blacklisted_dynamic_ip!" (
-            if not exist "lib\tmp\dynamic_iplookup_%ip%.tmp" (
-                call :IPLOOKUP dynamic %ip%
-            )
-            if not exist "lib\tmp\blacklisted_iplookup_%%~B.tmp" (
-                call :IPLOOKUP blacklisted %%~B
-            )
-            set dynamic_iplookup_dif=false
-            for /f "usebackqtokens=1,2delims==" %%C in ("lib\tmp\dynamic_iplookup_%ip%.tmp") do (
-                for /f "usebackqtokens=1,2delims==" %%E in ("lib\tmp\blacklisted_iplookup_%%~B.tmp") do (
-                    if "%%~C"=="%%~E" (
-                        if not "%%~C%%~D"=="%%~E%%~F" (
-                            if not "%%~C"=="status" (
-                                if not "%%~C"=="reverse" (
-                                    if not "%%~C"=="query" (
-                                        if not "%%~C"=="proxy_2" (
-                                            if not "%%~C"=="type" (
-                                                set dynamic_iplookup_dif=true
+        if not "%%~A"=="" (
+            if not "%%~B"=="" (
+                set "x=%%~A"
+                if not "!x:~0,2!"==";;" (
+                    if not defined skip_dynamic_try_%%~B (
+                        set "skip_dynamic_try_%%~B=1"
+                        set "x=%%~B"
+                        call :DETECTION_TYPE_FORM_PRECISION x blacklisted_dynamic_ip
+                        if "!dynamic_ip!"=="!blacklisted_dynamic_ip!" (
+                            if not exist "lib\tmp\dynamic_iplookup_%ip%.tmp" (
+                                call :IPLOOKUP dynamic %ip%
+                            )
+                            if not exist "lib\tmp\blacklisted_iplookup_%%~B.tmp" (
+                                call :IPLOOKUP blacklisted %%~B
+                            )
+                            if defined dynamic_iplookup_dif (
+                                set dynamic_iplookup_dif=
+                            )
+                            for /f "usebackqtokens=1,2delims==" %%C in ("lib\tmp\dynamic_iplookup_%ip%.tmp") do (
+                                for /f "usebackqtokens=1,2delims==" %%E in ("lib\tmp\blacklisted_iplookup_%%~B.tmp") do (
+                                    if "%%~C"=="%%~E" (
+                                        if not "%%~C%%~D"=="%%~E%%~F" (
+                                            if not "%%~C"=="status" (
+                                                if not "%%~C"=="message" (
+                                                    if not "%%~C"=="reverse" (
+                                                        if not "%%~C"=="query" (
+                                                            if not "%%~C"=="proxy_2" (
+                                                                if not "%%~C"=="type" (
+                                                                    set dynamic_iplookup_dif=1
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
                                             )
                                         )
                                     )
                                 )
                             )
+                            echo hi
+                            if not defined dynamic_iplookup_dif (
+                                echo hilol
+                                set "blacklisted_psn=%%~A"
+                                set "blacklisted_detection_type=Dynamic IP (bad accuracy*)"
+                                call :BLACKLISTED_FOUND
+                                exit /b 0
+                            )
                         )
                     )
                 )
             )
-            if !dynamic_iplookup_dif!==false (
-                set "blacklisted_psn=%%~A"
-                set "blacklisted_detection_type=Dynamic IP"
-                call :BLACKLISTED_FOUND
-                exit /b 0
-            )
         )
     )
-    set skip_dyn_%ip%=true
 )
 exit /b 1
 
@@ -876,7 +918,7 @@ for /f "tokens=2delims==." %%A in ('wmic os get LocalDateTime /value') do (
     set "hourtime=!datetime:~11,2!:!datetime:~14,2!"
 )
 if not defined blacklisted_found_%ip% (
-    set blacklisted_found_%ip%=true
+    set blacklisted_found_%ip%=1
 )
 if defined psn_ascii (
     call :BLACKLIST_WRITE psn_ascii
@@ -924,7 +966,9 @@ if %WINDOWS_RESULTS_LOGGING%==true (
     )
 )
 if %WINDOWS_NOTIFICATIONS%==true (
-    set pause_windows_notifications=false
+    if defined skip_windows_notifications (
+        set skip_windows_notifications=
+    )
     if %WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL%==true (
         if defined windows_notifications_packets_interval_%ip%_t1 (
             call :TIMER_T2 windows_notifications_packets_interval_%ip%
@@ -932,11 +976,11 @@ if %WINDOWS_NOTIFICATIONS%==true (
             set windows_notifications_packets_interval_%ip%_seconds=%WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER%
         )
         if !windows_notifications_packets_interval_%ip%_seconds! lss %WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER% (
-            set pause_windows_notifications=true
+            set skip_windows_notifications=1
         )
         call :TIMER_T1 windows_notifications_packets_interval_%ip%
     )
-    if !pause_windows_notifications!==false (
+    if not defined skip_windows_notifications (
         if defined windows_notifications_%ip%_t1 (
             call :TIMER_T2 windows_notifications_%ip%
         ) else (
@@ -980,7 +1024,9 @@ if defined PS3_IP_ADDRESS (
     )
     if %PS3_NOTIFICATIONS%==true (
         if %PS3_NOTIFICATIONS_ABOVE%==true (
-            set pause_ps3_notifications_above=false
+            if defined skip_ps3_notifications_above (
+                set skip_ps3_notifications_above=
+            )
             if %PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL%==true (
                 if defined ps3_notifications_above_packets_interval_%ip%_t1 (
                     call :TIMER_T2 ps3_notifications_above_packets_interval_%ip%
@@ -988,11 +1034,11 @@ if defined PS3_IP_ADDRESS (
                     set ps3_notifications_above_packets_interval_%ip%_seconds=%PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER%
                 )
                 if !ps3_notifications_above_packets_interval_%ip%_seconds! lss %PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER% (
-                    set pause_ps3_notifications_above=true
+                    set skip_ps3_notifications_above=1
                 )
                 call :TIMER_T1 ps3_notifications_above_packets_interval_%ip%
             )
-            if !pause_ps3_notifications_above!==false (
+            if not defined skip_ps3_notifications_above (
                 if defined ps3_notifications_above_%ip%_t1 (
                     call :TIMER_T2 ps3_notifications_above_%ip%
                 ) else (
@@ -1019,7 +1065,9 @@ if defined PS3_IP_ADDRESS (
             )
         )
         if %PS3_NOTIFICATIONS_BOTTOM%==true (
-            set pause_ps3_notifications_bottom=false
+            if defined skip_ps3_notifications_bottom (
+                set skip_ps3_notifications_bottom=
+            )
             if %PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL%==true (
                 if defined ps3_notifications_bottom_packets_interval_%ip%_t1 (
                     call :TIMER_T2 ps3_notifications_bottom_packets_interval_%ip%
@@ -1027,11 +1075,11 @@ if defined PS3_IP_ADDRESS (
                     set ps3_notifications_bottom_packets_interval_%ip%_seconds=%PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER%
                 )
                 if !ps3_notifications_bottom_packets_interval_%ip%_seconds! lss %PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER% (
-                    set pause_ps3_notifications_bottom=true
+                    set skip_ps3_notifications_bottom=1
                 )
                 call :TIMER_T1 ps3_notifications_bottom_packets_interval_%ip%
             )
-            if !pause_ps3_notifications_bottom!==false (
+            if not defined skip_ps3_notifications_bottom (
                 if defined ps3_notifications_bottom_%ip%_t1 (
                     call :TIMER_T2 ps3_notifications_bottom_%ip%
                 ) else (
@@ -1066,6 +1114,18 @@ exit /b
     >>"!WINDOWS_BLACKLIST_PATH!" (
         echo !%1!=%ip%
     ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+)
+exit /b
+
+:DETECTION_TYPE_FORM_PRECISION
+for /f "tokens=1-3delims=." %%A in ("!%1!") do (
+    if %DETECTION_TYPE_DYNAMIC_IP_PRECISION%==1 (
+        set "%2=%%~A"
+    ) else if %DETECTION_TYPE_DYNAMIC_IP_PRECISION%==2 (
+        set "%2=%%~A.%%~B"
+    ) else if %DETECTION_TYPE_DYNAMIC_IP_PRECISION%==3 (
+        set "%2=%%~A.%%~B.%%~C"
+    )
 )
 exit /b
 
@@ -1289,7 +1349,7 @@ if defined _psn_hexadecimal (
 exit /b 0
 
 :IPLOOKUP
-set "%1_iplookup_%2=true"
+set "%1_iplookup_%2=1"
 if exist "lib\tmp\%1_iplookup_%2.tmp" (
     for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\%1_iplookup_%2.tmp") do (
         set first_5=1
@@ -1408,7 +1468,7 @@ call :CHECK_PATH WINDOWS_TSHARK_PATH && (
     )
 )
 call :GET_WINDOWS_TSHARK_PATH && (
-    set generate_new_settings_file=true
+    set generate_new_settings_file=1
     exit /b
 )
 %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
@@ -1512,6 +1572,14 @@ exit /b
     echo ;;^<SOUND^>
     echo ;;The notification sound for your PS3 console when a blacklisted user is found.
     echo ;;Valid values are '0-9' and 'false' to disable.
+    echo ;;
+    echo ;;^<DETECTION_TYPE^>
+    echo ;;The detection types used to lookup and detect the blacklisted users.
+    echo ;;Those can be: 'PSN_USERNAME', 'STATIC_IP' and 'DYNAMIC_IP'.
+    echo ;;
+    echo ;;^<DETECTION_TYPE_DYNAMIC_IP_PRECISION^>
+    echo ;;The chosen number of octet^(s^) that will be used for the Dynamic IP lookup.
+    echo ;;Valid values are '1-3'.
     echo ;;-----------------------------------------------------------------------------
     echo WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH!
     echo WINDOWS_TSHARK_STDERR=!WINDOWS_TSHARK_STDERR!
@@ -1540,6 +1608,7 @@ exit /b
     echo PS3_NOTIFICATIONS_BOTTOM_TIMER=!PS3_NOTIFICATIONS_BOTTOM_TIMER!
     echo PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL=!PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL!
     echo PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER=!PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER!
+    echo DETECTION_TYPE_DYNAMIC_IP_PRECISION=!DETECTION_TYPE_DYNAMIC_IP_PRECISION!
 ) || (
     set "?=Settings.ini"
     %@ADMINISTRATOR_MANIFEST_REQUIRED%
@@ -1607,7 +1676,7 @@ if !PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!==false (
 )
 for /f %%A in ('curl -fksw "%%{response_code}" "http://!%1!/notify.ps3mapi?msg=!TITLE: =+!+successfully+connected+to+your+PS3+console%%2E&icon=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!!@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!" -o NUL') do (
     if "%%~A"=="200" (
-        set ps3_connected_notification=true
+        set ps3_connected_notification=1
         set "PS3_IP_ADDRESS=!%1!"
         set "PS3_MAC_ADDRESS=!%2!"
         if !PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!==true (
@@ -1635,7 +1704,7 @@ if "!%1:~0,1!"=="0" (
             for /l %%A in (1,1,9) do (
                 if defined first_4 (
                     if not "!%1:~1,1!"=="%%~A" (
-                        set generate_new_settings_file=true
+                        set generate_new_settings_file=1
                         set "%1=!%1:~1!"
                         set first_4=
                         goto :CHECK_NUMBER_STRIP_STARTING_0
@@ -1644,7 +1713,7 @@ if "!%1:~0,1!"=="0" (
             )
         ) else (
             if "!%1:~1,1!"=="0" (
-                set generate_new_settings_file=true
+                set generate_new_settings_file=1
                 set "%1=!%1:~1!"
                 goto :CHECK_NUMBER_STRIP_STARTING_0
             )
