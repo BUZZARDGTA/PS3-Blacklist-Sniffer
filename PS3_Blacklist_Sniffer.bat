@@ -34,7 +34,9 @@ cls
 >nul chcp 65001
 setlocal DisableDelayedExpansion
 pushd "%~dp0"
-for /f %%A in ('copy /z "%~nx0" nul') do set "\R=%%A"
+for /f %%A in ('copy /z "%~nx0" nul') do (
+    set "\R=%%A"
+)
 for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo(0x08"') do (
     set "\B=%%A"
 )
@@ -71,7 +73,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.1.0 - 04/01/2022
+set VERSION=v2.1.1 - 06/01/2022
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -432,23 +434,16 @@ if exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
 <nul set /p="Checking temporary file 'blacklisted_psn_hexadecimal.tmp' ...!\R!"
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     if exist "lib\tmp\blacklisted_psn_hexadecimal.tmp" (
-        for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
-            set first_6=1
-            for /f "usebackqdelims==" %%C in ("!WINDOWS_BLACKLIST_PATH!") do (
-                if defined first_6 (
-                    if "%%~A"=="%%~C" (
-                        set first_6=
-                        >nul 2>&1 findstr /bc:"%%~A=%%~B" "lib\tmp\_blacklisted_psn_hexadecimal.tmp" || (
-                            >>"lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
-                                echo %%~A=%%~B
-                            )
-                        )
-                    )
+        for /f "usebackqdelims==" %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
+            >nul findstr /bc:"%%~A=" "!WINDOWS_BLACKLIST_PATH!" || (
+                >"lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
+                    type "lib\tmp\blacklisted_psn_hexadecimal.tmp" | find /v "%%~A="
                 )
             )
         )
-        >nul move /y "lib\tmp\_blacklisted_psn_hexadecimal.tmp" "lib\tmp\blacklisted_psn_hexadecimal.tmp"
-        set first_6=
+        if exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
+            >nul move /y "lib\tmp\_blacklisted_psn_hexadecimal.tmp" "lib\tmp\blacklisted_psn_hexadecimal.tmp"
+        )
     )
 )
 for %%A in ("lib\tmp\dynamic_iplookup_*.tmp") do (
@@ -505,6 +500,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
         )
     )
 )
+cls
 title Initializing addresses and establishing connection to your PS3 console - !TITLE!
 echo:
 if !PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!==true (
@@ -837,7 +833,7 @@ if not defined skip_lookup_%ip% (
 )
 if not defined skip_static_%ip% (
     set "skip_static_%ip%=1"
-    for /f "tokens=1,2delims==" %%A in ('find "=%ip%" "!WINDOWS_BLACKLIST_PATH!"') do (
+    for /f "tokens=1,2delims==" %%A in ('findstr /ec:"=%ip%" "!WINDOWS_BLACKLIST_PATH!"') do (
         if "%ip%"=="%%~B" (
             set "blacklisted_psn=%%~A"
             set "blacklisted_detection_type=Static IP"
@@ -854,7 +850,7 @@ if not defined skip_dynamic_%ip% (
             set "%%~A="
         )
     )
-    for /f "tokens=1,2delims==" %%A in ('find "=!dynamic_ip!" "!WINDOWS_BLACKLIST_PATH!"') do (
+    for /f "tokens=1,2delims==" %%A in ('findstr /c:"=!dynamic_ip!" "!WINDOWS_BLACKLIST_PATH!"') do (
         if not "%%~A"=="" (
             if not "%%~B"=="" (
                 set "x=%%~A"
@@ -894,9 +890,7 @@ if not defined skip_dynamic_%ip% (
                                     )
                                 )
                             )
-                            echo hi
                             if not defined dynamic_iplookup_dif (
-                                echo hilol
                                 set "blacklisted_psn=%%~A"
                                 set "blacklisted_detection_type=Dynamic IP (bad accuracy*)"
                                 call :BLACKLISTED_FOUND
@@ -930,7 +924,7 @@ if not defined blacklisted_iplookup_%ip% (
 set blacklisted_psn_list_counter=1
 set "@blacklisted_psn_list=[%blacklisted_psn%]"
 set "@ps3_blacklisted_psn_list=%%5B%blacklisted_psn%%%5D"
-for /f "delims==" %%A in ('find "%blacklisted_psn%=" "!WINDOWS_BLACKLIST_PATH!"') do (
+for /f "delims==" %%A in ('findstr /bc:"%blacklisted_psn%=" "!WINDOWS_BLACKLIST_PATH!"') do (
     if "%%~A"=="%blacklisted_psn%" (
         if "!@blacklisted_psn_list:[%%~A]=!"=="!@blacklisted_psn_list!" (
             set /a blacklisted_psn_list_counter+=1
@@ -939,7 +933,7 @@ for /f "delims==" %%A in ('find "%blacklisted_psn%=" "!WINDOWS_BLACKLIST_PATH!"'
         )
     )
 )
-for /f "tokens=1,2delims==" %%A in ('find "=%ip%" "!WINDOWS_BLACKLIST_PATH!"') do (
+for /f "tokens=1,2delims==" %%A in ('findstr /ec:"=%ip%" "!WINDOWS_BLACKLIST_PATH!"') do (
     if "%%~B"=="%ip%" (
         if "!@blacklisted_psn_list:[%%~A]=!"=="!@blacklisted_psn_list!" (
             set /a blacklisted_psn_list_counter+=1
@@ -958,7 +952,9 @@ if !blacklisted_psn_list_counter! gtr 1 (
 echo User!@psn_plurial_asterisk!:!@blacklisted_psn_list! ^| ReverseIP:%reverse_ip% ^| IP:%ip% ^| Port:%port% ^| Time:!datetime! ^| Country:!blacklisted_iplookup_countrycode_%ip%! ^| Detection Type: !blacklisted_detection_type!
 :LOOP_WINDOWS_RESULTS_LOGGING_PATH
 if %WINDOWS_RESULTS_LOGGING%==true (
+    call :CHECK_FILE_NEWLINE WINDOWS_RESULTS_LOGGING_PATH
     >>"%WINDOWS_RESULTS_LOGGING_PATH%" (
+        !@write_newline!
         echo User!@psn_plurial_asterisk!:!@blacklisted_psn_list! ^| ReverseIP:%reverse_ip% ^| IP:%ip% ^| Port:%port% ^| Time:!datetime! ^| Country:!blacklisted_iplookup_countrycode_%ip%! ^| Detection Type: !blacklisted_detection_type!
     ) || (
         call :CREATE_WINDOWS_RESULTS_LOGGING_FILE
@@ -1046,13 +1042,15 @@ if defined PS3_IP_ADDRESS (
                 )
                 if !ps3_notifications_above_%ip%_seconds! geq %PS3_NOTIFICATIONS_ABOVE_TIMER% (
                     set ps3_notifications_above_%ip%_t1=
+                    if not %PS3_NOTIFICATIONS_ABOVE_SOUND%==false (
+                        set first_3=1
+                    )
                     for /l %%A in (1,1,3) do (
-                        if not %PS3_NOTIFICATIONS_ABOVE_SOUND%==false (
-                            set first_3=1
-                            if defined first_3 (
-                                set "@PS3_NOTIFICATIONS_ABOVE_SOUND=&snd=%PS3_NOTIFICATIONS_ABOVE_SOUND%"
-                                set first_3=
-                            ) else (
+                        if defined first_3 (
+                            set first_3=
+                            set "@PS3_NOTIFICATIONS_ABOVE_SOUND=&snd=%PS3_NOTIFICATIONS_ABOVE_SOUND%"
+                        ) else (
+                            if defined @PS3_NOTIFICATIONS_ABOVE_SOUND (
                                 set @PS3_NOTIFICATIONS_ABOVE_SOUND=
                             )
                         )
@@ -1110,10 +1108,36 @@ for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "%1_t2=(((1%%A*60)
 exit /b
 
 :BLACKLIST_WRITE
->nul findstr /bc:"!%1!=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
+>nul findstr /bec:"!%1!=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
+    call :CHECK_FILE_NEWLINE WINDOWS_BLACKLIST_PATH
     >>"!WINDOWS_BLACKLIST_PATH!" (
+        !@write_newline!
         echo !%1!=%ip%
     ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+)
+exit /b
+
+:CHECK_FILE_NEWLINE
+if defined @write_newline (
+    set @write_newline=
+)
+if exist "!%1!" (
+    <"!%1!" >nul (
+        for %%A in ("!%1!") do (
+            for /l %%. in (2 1 %%~zA) do (
+                pause
+            )
+            set /p @write_newline=
+        )
+    )
+    if defined @write_newline (
+        set "@write_newline=echo:"
+    ) else (
+        set @write_newline=
+    )
+)
+if defined write_newline_file_path (
+    set write_newline_file_path=
 )
 exit /b
 
@@ -1143,7 +1167,7 @@ if defined blacklisted_psn_hexadecimal_%blacklisted_psn% (
     exit /b 0
 ) else (
     if exist "lib\tmp\blacklisted_psn_hexadecimal.tmp" (
-        for /f "tokens=1,2delims==" %%A in ('find "%blacklisted_psn%=" "lib\tmp\blacklisted_psn_hexadecimal.tmp"') do (
+        for /f "tokens=1,2delims==" %%A in ('findstr /bc:"%blacklisted_psn%=" "lib\tmp\blacklisted_psn_hexadecimal.tmp"') do (
             if "%%~A"=="%blacklisted_psn%" (
                 if not "%%~B"=="" (
                     set "blacklisted_psn_hexadecimal_%blacklisted_psn%=%%~B"
@@ -1243,7 +1267,10 @@ for %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
             %@ADMINISTRATOR_MANIFEST_REQUIRED%
         )
     )
+    set "write_newline_file_path=%%~A"
+    call :CHECK_FILE_NEWLINE write_newline_file_path
     >>"%%~A" (
+        !@write_newline!
         echo %blacklisted_psn%=!blacklisted_psn_hexadecimal_%blacklisted_psn%!
     ) || (
         set "?=%%~A"
