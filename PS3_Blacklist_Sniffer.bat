@@ -21,6 +21,7 @@
 ::     @NotYourDope - Helped me for English translations.
 ::     @Simi - Helped me for some English translations.
 ::     @Grub4K - Creator of the timer algorithm.
+::     @Grub4K - Creator of the the ending newline detection algorithm.
 ::     @Grub4K - Quick analysis of the source code to improve it.
 ::     @Grub4K and @Sintrode
 ::     Helped me solve and understand a Batch bug with "FOR" loop variables.
@@ -73,7 +74,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
         )
     )
 )
-set VERSION=v2.1.1 - 06/01/2022
+set VERSION=v2.1.2 - 09/01/2022
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -165,8 +166,7 @@ for %%A in (
                 if "%%~B"=="WINDOWS_TSHARK_PATH" (
                     set "%%~B=%%~C"
                     call :CREATE_WINDOWS_TSHARK_PATH
-                )
-                if "%%~B"=="WINDOWS_TSHARK_STDERR" (
+                ) else if "%%~B"=="WINDOWS_TSHARK_STDERR" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
@@ -175,169 +175,143 @@ for %%A in (
                             )
                         )
                     )
-                )
-                if "%%~B"=="WINDOWS_BLACKLIST_PATH" (
+                ) else if "%%~B"=="WINDOWS_BLACKLIST_PATH" (
                     set "%%~B=%%~C"
                     call :CREATE_WINDOWS_BLACKLIST_FILE
-                )
-                if "%%~B"=="WINDOWS_RESULTS_LOGGING" (
+                ) else if "%%~B"=="WINDOWS_RESULTS_LOGGING" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="WINDOWS_RESULTS_LOGGING_PATH" (
+                ) else if "%%~B"=="WINDOWS_RESULTS_LOGGING_PATH" (
                     set "%%~B=%%~C"
                     call :CREATE_WINDOWS_RESULTS_LOGGING_FILE
-                )
-                if "%%~B"=="WINDOWS_NOTIFICATIONS" (
+                ) else if "%%~B"=="WINDOWS_NOTIFICATIONS" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="WINDOWS_NOTIFICATIONS_TIMER" (
+                ) else if "%%~B"=="WINDOWS_NOTIFICATIONS_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
                     )
-                )
-                if "%%~B"=="WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL" (
+                ) else if "%%~B"=="WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER" (
+                ) else if "%%~B"=="WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
                     )
-                )
-                if "%%~B"=="PS3_IP_AND_MAC_ADDRESS_AUTOMATIC" (
+                ) else if "%%~B"=="PS3_IP_AND_MAC_ADDRESS_AUTOMATIC" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_IP_ADDRESS" (
+                ) else if "%%~B"=="PS3_IP_ADDRESS" (
                     set "x=%%~C"
                     call :CHECK_IP x && (
                         set "%%~B=%%~C"
                     )
-                )
-                if "%%~B"=="PS3_MAC_ADDRESS" (
+                ) else if "%%~B"=="PS3_MAC_ADDRESS" (
                     set "x=%%~C"
                     call :CHECK_MAC x && (
                         set "%%~B=%%~C"
                     )
-                )
-                if "%%~B"=="PS3_PROTECTION" (
+                ) else if "%%~B"=="PS3_PROTECTION" (
                     for %%D in (false Reload_Game Exit_Game Restart_PS3 Shutdown_PS3) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON" (
                     for /l %%D in (0,1,50) do (
                         if "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND" (
                     for %%D in (false 0 1 2 3 4 5 6 7 8 9) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_ABOVE" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_ABOVE" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_ICON" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_ICON" (
                     for /l %%D in (0,1,50) do (
                         if "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_SOUND" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_SOUND" (
                     for %%D in (false 0 1 2 3 4 5 6 7 8 9) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_TIMER" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_SOUND" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_SOUND" (
                     for %%D in (false 0 1 2 3 4 5 6 7 8 9) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_TIMER" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
                         )
                     )
-                )
-                if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER" (
+                ) else if "%%~B"=="PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER" (
                     set "x=%%~C"
                     call :CHECK_NUMBER x && (
                         set "%%~B=!x!"
                     )
-                )
-                if "%%~B"=="DETECTION_TYPE_DYNAMIC_IP_PRECISION" (
+                ) else if "%%~B"=="DETECTION_TYPE_DYNAMIC_IP_PRECISION" (
                     for %%D in (1 2 3) do (
                         if /i "%%~C"=="%%D" (
                             set "%%~B=%%~C"
@@ -350,7 +324,9 @@ for %%A in (
         set generate_new_settings_file=1
     )
 )
-if not "!settings_number!"=="28" (
+if "!settings_number!"=="28" (
+    set settings_number=
+) else (
     set generate_new_settings_file=1
 )
 if not defined WINDOWS_TSHARK_PATH (
@@ -438,6 +414,9 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
             >nul findstr /bc:"%%~A=" "!WINDOWS_BLACKLIST_PATH!" || (
                 >"lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
                     type "lib\tmp\blacklisted_psn_hexadecimal.tmp" | find /v "%%~A="
+                ) || (
+                    set "?=lib\tmp\_blacklisted_psn_hexadecimal.tmp"
+                    %@ADMINISTRATOR_MANIFEST_REQUIRED%
                 )
             )
         )
@@ -481,20 +460,8 @@ if defined files_to_delete (
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     for %%A in ("lib\tmp\blacklisted_iplookup_*.tmp") do (
         <nul set /p="Checking temporary file '%%~nxA' ...                                        !\R!"
-        set first_0=1
         set "x=%%~nA"
-        for /f "usebackqtokens=1,2delims==" %%B in ("!WINDOWS_BLACKLIST_PATH!") do (
-            if defined first_0 (
-                if not "%%~B"=="" (
-                    if not "%%~C"=="" (
-                        if not "!x:%%~C=!"=="!x!" (
-                            set first_0=
-                        )
-                    )
-                )
-            )
-        )
-        if defined first_0 (
+        >nul findstr /ec:"=!x:blacklisted_iplookup_=!" "!WINDOWS_BLACKLIST_PATH!" || (
             <nul set /p="Deleting temporary file '%%~nxA' ...                                        !\R!"
             del /f /q "%%~A"
         )
@@ -681,19 +648,14 @@ echo:
 )
 if defined PS3_IP_ADDRESS (
     set "@PS3_IP_ADDRESS=dst or src host !PS3_IP_ADDRESS! and "
-    if "!VERSION:~1,3!" lss "!last_version:~1,3!" (
-        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=!TITLE: =+!:%%0D%%0AA+newer+version+is+detected+(v!last_version:~0,3!).&icon=21&snd=5"
+    if "!VERSION:~1,5!" lss "!last_version:~1,5!" (
+        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=!TITLE: =+!:%%0D%%0AA+newer+version+is+detected+(v!last_version:~1,5!).&icon=21&snd=5"
     )
 )
 if defined PS3_MAC_ADDRESS (
     set "@PS3_MAC_ADDRESS=ether dst or src !PS3_MAC_ADDRESS! and "
 )
 set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 3.237.117.0/24 and not net 52.40.62.0/24 and not net 162.244.52.0/23 and not net 185.34.107.0/24"
-if defined CAPTURE_FILTER (
-    if "!CAPTURE_FILTER:~-5!"==" and " (
-        set "CAPTURE_FILTER=!CAPTURE_FILTER:~0,-5!"
-    )
-)
 title Sniffin' my babies IPs.   ^|IP:!PS3_IP_ADDRESS!^|   ^|MAC:!PS3_MAC_ADDRESS!^|   ^|Interface:!Interface_%CAPTURE_INTERFACE%!^| - !TITLE!
 echo Started capturing on network interface "!Interface_%CAPTURE_INTERFACE%!" ...
 echo:
@@ -996,23 +958,23 @@ if defined PS3_IP_ADDRESS (
         set skip_ps3_protection=1
         if not %PS3_PROTECTION%==false (
             if %PS3_PROTECTION%==Reload_Game (
-                >nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$reloadgame" && (
+                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/xmb.ps3$reloadgame" && (
                     if %PS3_NOTIFICATIONS%==true (
                         >nul timeout /t 25 /nobreak
                     )
                 )
             ) else if %PS3_PROTECTION%==Exit_Game (
-                >nul curl -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$exit" && (
+                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/xmb.ps3$exit" && (
                     if %PS3_NOTIFICATIONS%==true (
                         >nul timeout /t 15 /nobreak
                     )
                 )
             ) else if %PS3_PROTECTION%==Restart_PS3 (
-                >nul curl -fks "http://%PS3_IP_ADDRESS%/restart.ps3" && (
+                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/restart.ps3" && (
                     exit /b
                 )
             ) else if %PS3_PROTECTION%==Shutdown_PS3 (
-                >nul curl -fks "http://%PS3_IP_ADDRESS%/shutdown.ps3" && (
+                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/shutdown.ps3" && (
                     exit /b
                 )
             )
@@ -1054,7 +1016,7 @@ if defined PS3_IP_ADDRESS (
                                 set @PS3_NOTIFICATIONS_ABOVE_SOUND=
                             )
                         )
-                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
+                        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
                     )
                     if not defined ps3_notifications_above_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_above_%ip%
@@ -1085,9 +1047,9 @@ if defined PS3_IP_ADDRESS (
                 )
                 if !ps3_notifications_bottom_%ip%_seconds! geq %PS3_NOTIFICATIONS_BOTTOM_TIMER% (
                     set ps3_notifications_bottom_%ip%_t1=
-                    >nul curl -fkLs "http://%PS3_IP_ADDRESS%/popup.ps3*Blacklisted+user!@ps3_psn_plurial_asterisk!%%3A+!@ps3_blacklisted_psn_list!+connected..."
+                    >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/popup.ps3*Blacklisted+user!@ps3_psn_plurial_asterisk!%%3A+!@ps3_blacklisted_psn_list!+connected..."
                     if not %PS3_NOTIFICATIONS_BOTTOM_SOUND%==false (
-                        >nul curl -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTOM_SOUND%"
+                        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTOM_SOUND%"
                     )
                     if not defined ps3_notifications_bottom_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_bottom_%ip%
@@ -1185,70 +1147,7 @@ set "blacklisted_psn_ascii=%blacklisted_psn%"
 :_ASCII_TO_HEXADECIMAL
 if defined blacklisted_psn_ascii (
     for %%A in (
-        "a`61"
-        "b`62"
-        "c`63"
-        "d`64"
-        "e`65"
-        "f`66"
-        "g`67"
-        "h`68"
-        "i`69"
-        "j`6A"
-        "k`6B"
-        "l`6C"
-        "m`6D"
-        "n`6E"
-        "o`6F"
-        "p`70"
-        "q`71"
-        "r`72"
-        "s`73"
-        "t`74"
-        "u`75"
-        "v`76"
-        "w`77"
-        "x`78"
-        "y`79"
-        "z`7A"
-        "A`41"
-        "B`42"
-        "C`43"
-        "D`44"
-        "E`45"
-        "F`46"
-        "G`47"
-        "H`48"
-        "I`49"
-        "J`4A"
-        "K`4B"
-        "L`4C"
-        "M`4D"
-        "N`4E"
-        "O`4F"
-        "P`50"
-        "Q`51"
-        "R`52"
-        "S`53"
-        "T`54"
-        "U`55"
-        "V`56"
-        "W`57"
-        "X`58"
-        "Y`59"
-        "Z`5A"
-        "0`30"
-        "1`31"
-        "2`32"
-        "3`33"
-        "4`34"
-        "5`35"
-        "6`36"
-        "7`37"
-        "8`38"
-        "9`39"
-        "-`2D"
-        "_`5F"
+        "a`61" "b`62" "c`63" "d`64" "e`65" "f`66" "g`67" "h`68" "i`69" "j`6A" "k`6B" "l`6C" "m`6D" "n`6E" "o`6F" "p`70" "q`71" "r`72" "s`73" "t`74" "u`75" "v`76" "w`77" "x`78" "y`79" "z`7A" "A`41" "B`42" "C`43" "D`44" "E`45" "F`46" "G`47" "H`48" "I`49" "J`4A" "K`4B" "L`4C" "M`4D" "N`4E" "O`4F" "P`50" "Q`51" "R`52" "S`53" "T`54" "U`55" "V`56" "W`57" "X`58" "Y`59" "Z`5A" "0`30" "1`31" "2`32" "3`33" "4`34" "5`35" "6`36" "7`37" "8`38" "9`39" "-`2D" "_`5F"
     ) do (
         for /f "tokens=1,2delims=`" %%B in ("%%~A") do (
             if "!blacklisted_psn_ascii:~0,1!"=="%%~B" (
@@ -1299,70 +1198,7 @@ set "_psn_hexadecimal=%psn_hexadecimal%"
 :_HEXADECIMAL_TO_ASCII
 if defined _psn_hexadecimal (
     for %%A in (
-        "61`a"
-        "62`b"
-        "63`c"
-        "64`d"
-        "65`e"
-        "66`f"
-        "67`g"
-        "68`h"
-        "69`i"
-        "6A`j"
-        "6B`k"
-        "6C`l"
-        "6D`m"
-        "6E`n"
-        "6F`o"
-        "70`p"
-        "71`q"
-        "72`r"
-        "73`s"
-        "74`t"
-        "75`u"
-        "76`v"
-        "77`w"
-        "78`x"
-        "79`y"
-        "7A`z"
-        "41`A"
-        "42`B"
-        "43`C"
-        "44`D"
-        "45`E"
-        "46`F"
-        "47`G"
-        "48`H"
-        "49`I"
-        "4A`J"
-        "4B`K"
-        "4C`L"
-        "4D`M"
-        "4E`N"
-        "4F`O"
-        "50`P"
-        "51`Q"
-        "52`R"
-        "53`S"
-        "54`T"
-        "55`U"
-        "56`V"
-        "57`W"
-        "58`X"
-        "59`Y"
-        "5A`Z"
-        "30`0"
-        "31`1"
-        "32`2"
-        "33`3"
-        "34`4"
-        "35`5"
-        "36`6"
-        "37`7"
-        "38`8"
-        "39`9"
-        "2D`-"
-        "5F`_"
+        "61`a" "62`b" "63`c" "64`d" "65`e" "66`f" "67`g" "68`h" "69`i" "6A`j" "6B`k" "6C`l" "6D`m" "6E`n" "6F`o" "70`p" "71`q" "72`r" "73`s" "74`t" "75`u" "76`v" "77`w" "78`x" "79`y" "7A`z" "41`A" "42`B" "43`C" "44`D" "45`E" "46`F" "47`G" "48`H" "49`I" "4A`J" "4B`K" "4C`L" "4D`M" "4E`N" "4F`O" "50`P" "51`Q" "52`R" "53`S" "54`T" "55`U" "56`V" "57`W" "58`X" "59`Y" "5A`Z" "30`0" "31`1" "32`2" "33`3" "34`4" "35`5" "36`6" "37`7" "38`8" "39`9" "2D`-" "5F`_"
     ) do (
         for /f "tokens=1,2delims=`" %%B in ("%%~A") do (
             if /i "!_psn_hexadecimal:~0,2!"=="%%~B" (
@@ -1378,20 +1214,13 @@ exit /b 0
 :IPLOOKUP
 set "%1_iplookup_%2=1"
 if exist "lib\tmp\%1_iplookup_%2.tmp" (
-    for /f "usebackqtokens=1,2delims==" %%A in ("lib\tmp\%1_iplookup_%2.tmp") do (
-        set first_5=1
-        if defined first_5 (
-            if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~A`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
-                set first_5=
-                set "%1_iplookup_%%~A_%2=%%~B"
-            )
+    for /f "usebackqtokens=1*delims==" %%A in ("lib\tmp\%1_iplookup_%2.tmp") do (
+        if /i not "!@LOOKUP_IPLOOKUP_FIELDS:`%%~A`=!"=="!@LOOKUP_IPLOOKUP_FIELDS!" (
+            set "%1_iplookup_%%~A_%2=%%~B"
         )
     )
-    if defined first_5 (
-        set first_5=
-    )
 ) else (
-    for /f "tokens=1,2delims=</" %%A in ('curl -fkLs "http://ip-api.com/xml/%2?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"') do (
+    for /f "tokens=1,2delims=</" %%A in ('curl.exe -fks "http://ip-api.com/xml/%2?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"') do (
         set "x=%%~A%%~B"
         set "x=!x:~2!"
         for /f "tokens=1,2delims=>" %%C in ("!x!") do (
@@ -1405,7 +1234,7 @@ if exist "lib\tmp\%1_iplookup_%2.tmp" (
         )
     )
     if "%~1"=="blacklisted" (
-        for /f "tokens=1,2delims=:" %%A in ('curl -fkLs "https://proxycheck.io/v2/%2?vpn=1&port=1"') do (
+        for /f "tokens=1,2delims=:" %%A in ('curl.exe -fks "https://proxycheck.io/v2/%2?vpn=1&port=1"') do (
             set "x=%%~A:%%~B"
             set "x=!x:"=!"
             if "!x:~-1!"=="," (
@@ -1446,7 +1275,7 @@ if exist "lib\tmp\%1_iplookup_%2.tmp" (
     )
 )
 call :CHECK_COUNTRYCODE %1 %2 || (
-    for /f "tokens=1,2delims=:, " %%A in ('curl -fkLs "https://ipinfo.io/%2/json"') do (
+    for /f "tokens=1,2delims=:, " %%A in ('curl.exe -fks "https://ipinfo.io/%2/json"') do (
         if /i "%%~A"=="country" (
             set "%1_iplookup_countrycode_%2=%%~B"
             call :CHECK_COUNTRYCODE %1 %2 || (
@@ -1701,7 +1530,7 @@ if !PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!==false (
 ) else (
     set "@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND=&snd=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!"
 )
-for /f %%A in ('curl -fksw "%%{response_code}" "http://!%1!/notify.ps3mapi?msg=!TITLE: =+!+successfully+connected+to+your+PS3+console%%2E&icon=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!!@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!" -o NUL') do (
+for /f %%A in ('curl.exe -fkLsw "%%{response_code}" "http://!%1!/notify.ps3mapi?msg=!TITLE: =+!+successfully+connected+to+your+PS3+console%%2E&icon=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!!@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!" -o NUL') do (
     if "%%~A"=="200" (
         set ps3_connected_notification=1
         set "PS3_IP_ADDRESS=!%1!"
@@ -1723,28 +1552,12 @@ if not defined %1 (
 for /f "delims=0123456789" %%A in ("!%1!") do (
     exit /b 1
 )
-:CHECK_NUMBER_STRIP_STARTING_0
+:CHECK_NUMBER_STRIP_STARTING_ZERO
 if "!%1:~0,1!"=="0" (
     if not "!%1:~1,1!"=="" (
-        if not "!%1:~1,1!"=="0" (
-            set first_4=1
-            for /l %%A in (1,1,9) do (
-                if defined first_4 (
-                    if not "!%1:~1,1!"=="%%~A" (
-                        set generate_new_settings_file=1
-                        set "%1=!%1:~1!"
-                        set first_4=
-                        goto :CHECK_NUMBER_STRIP_STARTING_0
-                    )
-                )
-            )
-        ) else (
-            if "!%1:~1,1!"=="0" (
-                set generate_new_settings_file=1
-                set "%1=!%1:~1!"
-                goto :CHECK_NUMBER_STRIP_STARTING_0
-            )
-        )
+        set generate_new_settings_file=1
+        set "%1=!%1:~1!"
+        goto :CHECK_NUMBER_STRIP_STARTING_ZERO
     )
 )
 exit /b 0
@@ -1830,9 +1643,11 @@ if not "!x:~1!"=="" if "!x:~2!"=="" for /f "delims=0123456789abcdefABCDEF" %%A i
 exit /b 0
 
 :UPDATER
-for /f %%A in ('curl.exe -fkLs "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/version/version.txt"') do (
+for /f "delims=" %%A in ('curl.exe -fks "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/version/version.txt"') do (
     set "last_version=%%~A"
+    goto :exit_1
 )
+:exit_1
 if not defined last_version (
     exit /b
 )
@@ -1849,18 +1664,21 @@ if defined OLD_VERSION (
     )
 )
 >"lib\msgbox_updater.vbs" (
-echo Dim Response
-echo Response=MsgBox^(WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)^)
-echo If Response=vbYes then
-echo wscript.quit 6
-echo End If
-echo wscript.quit 7
+    echo Dim Response
+    echo Response=MsgBox^(WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)^)
+    echo If Response=vbYes then
+    echo wscript.quit 6
+    echo End If
+    echo wscript.quit 7
+) || (
+    set "?=lib\msgbox_updater.vbs"
+    %@ADMINISTRATOR_MANIFEST_REQUIRED%
 )
 cscript //nologo "lib\msgbox_updater.vbs" "New version found. Do you want to update ?!\N!!\N!Current version: !VERSION!!\N!Latest version   : !last_version!" 69668 "!TITLE! Updater"
 if not "!errorlevel!"=="6" (
     exit /b
 )
-curl.exe --create-dirs -f#kLo "[UPDATED]_PS3_Blacklist_Sniffer.bat" "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/main/PS3_Blacklist_Sniffer.bat" || (
+curl.exe --create-dirs -f#ko "[UPDATED]_PS3_Blacklist_Sniffer.bat" "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/main/PS3_Blacklist_Sniffer.bat" || (
     exit /b
 )
 if not exist "[UPDATED]_PS3_Blacklist_Sniffer.bat" (
