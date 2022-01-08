@@ -24,7 +24,11 @@
 
 **Windows notifications:**
 
-![Showcase_PS3_BS](https://user-images.githubusercontent.com/62464560/148647709-6277563b-f2c3-48ad-9b42-88ada6b90f9a.png)
+CMD console                |  Windows notification
+:-------------------------:|:-------------------------:
+![Showcase_PS3_BS_Console](https://user-images.githubusercontent.com/62464560/148648715-848d141e-919b-4f1b-b16f-2a7625ec9945.png)  |  ![Showcase_PS3_BS_PS3](https://user-images.githubusercontent.com/62464560/148648713-fde345d9-8db4-4d6f-a3e9-b95403b290c9.png)
+Blacklist file                |  Logs file
+![Showcase_PS3_BS_Blacklist](https://user-images.githubusercontent.com/62464560/148648714-88a67695-cf36-47c4-9e41-c88ad5fff41d.png)  |  ![Showcase_PS3_BS_Logs](https://user-images.githubusercontent.com/62464560/148648806-a32ffe73-f2dc-4342-8cf2-a3677a11315c.png)
 
 ## Requirements
 
