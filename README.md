@@ -22,7 +22,7 @@
 
 ## Showcase
 
-**Windows notification:**
+**Windows notifications:**
 
 ![Showcase_PS3_BS](https://user-images.githubusercontent.com/62464560/148647709-6277563b-f2c3-48ad-9b42-88ada6b90f9a.png)
 
