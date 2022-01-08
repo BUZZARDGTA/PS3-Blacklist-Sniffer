@@ -22,8 +22,6 @@
 
 ## Showcase
 
-**Windows notifications:**
-
 | CMD console                |  Windows notification      |
 | :-------------------------:|:-------------------------: |
 ![Showcase_PS3_BS_Console](https://user-images.githubusercontent.com/62464560/148648715-848d141e-919b-4f1b-b16f-2a7625ec9945.png)  |  ![Showcase_PS3_BS_PS3](https://user-images.githubusercontent.com/62464560/148648713-fde345d9-8db4-4d6f-a3e9-b95403b290c9.png)
