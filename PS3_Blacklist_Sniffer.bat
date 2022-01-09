@@ -72,7 +72,7 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.1.3 - 09/01/2022
+set VERSION=v2.1.4 - 09/01/2022
 set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE!
 echo:
@@ -385,22 +385,23 @@ title Capture network interface selection - !TITLE!
 :CHOOSE_INTERFACE
 cls
 echo:
-"!WINDOWS_TSHARK_PATH!" -D
-set x=
-for /f "tokens=2delims=()" %%A in ('"!WINDOWS_TSHARK_PATH!" -D') do (
+set x=0
+for /f "tokens=1*delims=(" %%A in ('"!WINDOWS_TSHARK_PATH!" -D') do (
     set /a x+=1
-    set "Interface_!x!=%%A"
+    set "interface_!x!=%%B"
+    <nul set /p="%%A(%%B"
+    echo:
 )
 echo:
 set CAPTURE_INTERFACE=
 set /p "CAPTURE_INTERFACE=Select your desired capture network interface (1,1,!x!): "
 for /l %%A in (1,1,!x!) do (
     if "%%A"=="!CAPTURE_INTERFACE!" (
-        goto :START
+        goto :JUMP_2
     )
 )
 goto :CHOOSE_INTERFACE
-:START
+:JUMP_2
 cls
 title Cleaning temporary files - !TITLE!
 echo:
@@ -657,8 +658,8 @@ if defined PS3_MAC_ADDRESS (
     set "@PS3_MAC_ADDRESS=ether dst or src !PS3_MAC_ADDRESS! and "
 )
 set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 3.237.117.0/24 and not net 52.40.62.0/24 and not net 162.244.52.0/23 and not net 185.34.107.0/24"
-title Sniffin' my babies IPs.   ^|IP:!PS3_IP_ADDRESS!^|   ^|MAC:!PS3_MAC_ADDRESS!^|   ^|Interface:!Interface_%CAPTURE_INTERFACE%!^| - !TITLE!
-echo Started capturing on network interface "!Interface_%CAPTURE_INTERFACE%!" ...
+title Sniffin' my babies IPs.   ^|IP:!PS3_IP_ADDRESS!^|   ^|MAC:!PS3_MAC_ADDRESS!^|   ^|Interface:!interface_%CAPTURE_INTERFACE%!^| - !TITLE!
+echo Started capturing on network interface "!interface_%CAPTURE_INTERFACE%!" ...
 echo:
 for /l %%? in () do (
     if exist "!WINDOWS_TSHARK_PATH!" (
@@ -1646,9 +1647,9 @@ exit /b 0
 :UPDATER
 for /f "delims=" %%A in ('curl.exe -fks "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/version/version.txt"') do (
     set "last_version=%%~A"
-    goto :JUMP_2
+    goto :JUMP_3
 )
-:JUMP_2
+:JUMP_3
 if not defined last_version (
     exit /b
 )
