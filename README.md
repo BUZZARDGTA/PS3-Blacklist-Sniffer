@@ -30,7 +30,7 @@
 
 ## Requirements
 
-* [Windows](https://www.microsoft.com/windows) 8, 8.1, 10, 11 (x86/x64)
+* [Windows](https://www.microsoft.com/windows) 10 or 11 (x86/x64)
 * [Wireshark](https://www.wireshark.org/)
 * [Npcap](https://nmap.org/npcap/) or [Winpcap](https://www.winpcap.org/)
 * *optional:* [webMAN MOD](https://github.com/aldostools/webMAN-MOD) (PS3 notifications)
