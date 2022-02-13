@@ -8,7 +8,7 @@
 ::     to connect in or who are already in to your session.
 ::
 :: REQUIREMENTS
-::     Windows 8, 8.1, 10, 11 (x86/x64)
+::     Windows 10 or 11 (x86/x64)
 ::     Wireshark (with Npcap/Winpcap installed)
 ::     webMAN MOD ((PS3 Notification) not obligatory)
 ::
@@ -24,6 +24,11 @@
 ::     @Grub4K - Creator of the the ending newline detection algorithm.
 ::     @Grub4K - Quick analysis of the source code to improve it.
 ::     @Grub4K and @Sintrode
+::     Helped me understand the Windows 7 (x86)
+::     "find.exe" command bug with the 65001 codepage.
+::     To avoid similar problems in the future and solve it,
+::     I decided to remove the Windows support 7, 8, 8.1 after that...
+::     @Grub4K and @Sintrode
 ::     Helped me solve and understand a Batch bug with "FOR" loop variables.
 ::     @sintrode and https://www.dostips.com/forum/viewtopic.php?t=6560
 ::     ^^ "How to put inner quotes in outer quotes in "FOR" loop?"
@@ -32,7 +37,6 @@
 ::------------------------------------------------------------------------------
 @echo off
 cls
->nul chcp 65001
 setlocal DisableDelayedExpansion
 pushd "%~dp0"
 for /f %%A in ('copy /z "%~nx0" nul') do (
@@ -42,19 +46,18 @@ for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo(0x08"') do (
     set "\B=%%A"
 )
 set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
-set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit"
-set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE!"":close"^) & exit)"
+set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^) & exit"
+set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^) & exit)"
 setlocal EnableDelayedExpansion
-set "@LOOKUP_WINDOWS_VERSIONS=`10.0`6.3`6.2`6.1`"
 set "@LOOKUP_PSN_LENGTH=`136`1160`"
 set "@LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`"
 (set \N=^
 %=leave unchanged=%
 )
 if defined ProgramFiles(x86) (
-    set "PATH=!PATH!;lib\Curl\x64"
+    set "PATH=!PATH!;lib\curl\x64"
 ) else (
-    set "PATH=!PATH!;lib\Curl\x32"
+    set "PATH=!PATH!;lib\curl\x86"
 )
 if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
     for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq cmd.exe" ^| find /i "PS3 Blacklist Sniffer"') do (
@@ -62,7 +65,7 @@ if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
     )
     >nul move /y "%~nx0" "PS3_Blacklist_Sniffer.bat" && (
         start "" "PS3_Blacklist_Sniffer.bat" && (
-            exit
+            exit 0
         )
     )
 )
@@ -72,10 +75,10 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.1.4 - 09/01/2022
-set TITLE=PS3 Blacklist Sniffer !VERSION:~0,6!
-title !TITLE!
-echo:
+set VERSION=v2.1.5 - 13/02/2022
+set TITLE=PS3 Blacklist Sniffer
+set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
+title !TITLE_VERSION!
 for /f "tokens=4-7delims=[.] " %%A in ('ver') do (
     if /i "%%A"=="version" (
         set "WINDOWS_VERSION=%%B.%%C"
@@ -83,31 +86,34 @@ for /f "tokens=4-7delims=[.] " %%A in ('ver') do (
         set "WINDOWS_VERSION=%%A.%%B"
     )
 )
-if "!@LOOKUP_WINDOWS_VERSIONS:`%WINDOWS_VERSION%`=!"=="!@LOOKUP_WINDOWS_VERSIONS!" (
-    %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "Your computer does not reach the minimum Windows version compatible with !TITLE!.!\N!!\N!You need Windows 7 or higher." 69648 "!TITLE!"
-    exit
+if not "!WINDOWS_VERSION!"=="10.0" (
+    %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "ERROR: Your Windows version is not compatible with PS3 Blacklist Sniffer.!\N!!\N!You need Windows 10/11 (x86/x64)." 69648 "!TITLE_VERSION!"
+    exit /b 0
 )
+>nul chcp 65001
+echo:
 echo Searching for a new update ...
 call :UPDATER
 >nul 2>&1 sc query npcap || (
     >nul 2>&1 sc query npf || (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE!"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE_VERSION!"
         start "" "https://nmap.org/npcap/"
-        exit
+        exit /b 0
     )
 )
 for %%A in (
     "ARP.EXE"
     "curl.exe"
+    "notepad.exe"
 ) do (
     >nul 2>&1 where "%%~A" || (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE!"
-        exit
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE_VERSION!"
+        exit /b 0
     )
 )
-:SETUP
 echo:
 echo Applying your custom settings from 'Settings.ini' ...
+:SETUP
 for %%A in (
     "@WINDOWS_TSHARK_STDERR"
     "@PS3_IP_ADDRESS"
@@ -163,7 +169,9 @@ for %%A in (
                 set first_1=
                 if "%%~B"=="WINDOWS_TSHARK_PATH" (
                     set "%%~A=%%~C"
-                    call :CREATE_WINDOWS_TSHARK_PATH
+                    call :CREATE_WINDOWS_TSHARK_PATH || (
+                        exit /b 0
+                    )
                 ) else if "%%~B"=="WINDOWS_TSHARK_STDERR" (
                     for %%D in (true false) do (
                         if /i "%%~C"=="%%D" (
@@ -330,9 +338,6 @@ if not "!settings_number!"=="28" (
 if defined settings_number (
     set settings_number=
 )
-if not defined WINDOWS_TSHARK_PATH (
-    call :CREATE_WINDOWS_TSHARK_PATH
-)
 for %%A in (
     "WINDOWS_TSHARK_STDERR=true"
     "WINDOWS_BLACKLIST_PATH=Blacklist.ini"
@@ -381,21 +386,29 @@ if defined generate_new_settings_file (
     call :CREATE_SETTINGS_FILE
     goto :SETUP
 )
-title Capture network interface selection - !TITLE!
+if not defined WINDOWS_TSHARK_PATH (
+    call :CREATE_WINDOWS_TSHARK_PATH || (
+        exit /b 0
+    )
+)
+title Capture network interface selection - !TITLE_VERSION!
 :CHOOSE_INTERFACE
 cls
 echo:
-set x=0
+set cn=0
 for /f "tokens=1*delims=(" %%A in ('"!WINDOWS_TSHARK_PATH!" -D') do (
-    set /a x+=1
-    set "interface_!x!=%%B"
+    set /a cn+=1
+    set "interface_!cn!=%%B"
+    for %%C in (!cn!) do (
+        set "interface_!cn!=!interface_%%C:~0,-1!"
+    )
     <nul set /p="%%A(%%B"
     echo:
 )
 echo:
 set CAPTURE_INTERFACE=
-set /p "CAPTURE_INTERFACE=Select your desired capture network interface (1,1,!x!): "
-for /l %%A in (1,1,!x!) do (
+set /p "CAPTURE_INTERFACE=Select your desired capture network interface (1,1,!cn!): "
+for /l %%A in (1,1,!cn!) do (
     if "%%A"=="!CAPTURE_INTERFACE!" (
         goto :JUMP_2
     )
@@ -403,7 +416,7 @@ for /l %%A in (1,1,!x!) do (
 goto :CHOOSE_INTERFACE
 :JUMP_2
 cls
-title Cleaning temporary files - !TITLE!
+title Cleaning temporary files - !TITLE_VERSION!
 echo:
 echo Cleaning incorrect, invalid or unnecessary temporary !TITLE! files ...
 if exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
@@ -470,7 +483,7 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
     )
 )
 cls
-title Initializing addresses and establishing connection to your PS3 console - !TITLE!
+title Initializing addresses and establishing connection to your PS3 console - !TITLE_VERSION!
 echo:
 if !PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!==true (
     echo Initializing addresses and establishing connection to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
@@ -523,7 +536,7 @@ if !PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!==true (
     echo Establishing connection to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
     call :CHECK_WEBMAN_MOD_CONNECTION PS3_IP_ADDRESS PS3_MAC_ADDRESS
 )
-title Computing ascii PSN usernames to hexadecimal in memory - !TITLE!
+title Computing ascii PSN usernames to hexadecimal in memory - !TITLE_VERSION!
 :LOOP_BLACKLIST_FILE_EMPTY
 cls
 echo:
@@ -631,8 +644,8 @@ echo:
         )
     )
     if not defined notepad_pid (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find any valid users in your 'WINDOWS_BLACKLIST_PATH' setting.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE!"
-        start "" "!WINDOWS_BLACKLIST_PATH!"
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find any valid users in your 'WINDOWS_BLACKLIST_PATH' setting.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE_VERSION!"
+        start "" "notepad.exe" "!WINDOWS_BLACKLIST_PATH!"
         for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq notepad.exe" ^| find /i "notepad.exe"') do (
             set "notepad_pid=%%~A"
         )
@@ -651,14 +664,14 @@ echo:
 if defined PS3_IP_ADDRESS (
     set "@PS3_IP_ADDRESS=dst or src host !PS3_IP_ADDRESS! and "
     if "!VERSION:~1,5!" lss "!last_version:~1,5!" (
-        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=!TITLE: =+!:%%0D%%0AA+newer+version+is+detected+(v!last_version:~1,5!).&icon=21&snd=5"
+        >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=!TITLE_VERSION: =+!:%%0D%%0AA+newer+version+is+detected+(v!last_version:~1,5!).&icon=21&snd=5"
     )
 )
 if defined PS3_MAC_ADDRESS (
     set "@PS3_MAC_ADDRESS=ether dst or src !PS3_MAC_ADDRESS! and "
 )
 set "CAPTURE_FILTER=!@PS3_IP_ADDRESS!!@PS3_MAC_ADDRESS!ip and udp and not broadcast and not multicast and not port 443 and not port 80 and not port 53 and not net 3.237.117.0/24 and not net 52.40.62.0/24 and not net 162.244.52.0/23 and not net 185.34.107.0/24"
-title Sniffin' my babies IPs.   ^|IP:!PS3_IP_ADDRESS!^|   ^|MAC:!PS3_MAC_ADDRESS!^|   ^|Interface:!interface_%CAPTURE_INTERFACE%!^| - !TITLE!
+title Sniffin' my babies IPs.   ^|IP:!PS3_IP_ADDRESS!^|   ^|MAC:!PS3_MAC_ADDRESS!^|   ^|Interface:!interface_%CAPTURE_INTERFACE%!^| - !TITLE_VERSION!
 echo Started capturing on network interface "!interface_%CAPTURE_INTERFACE%!" ...
 echo:
 for /l %%? in () do (
@@ -722,11 +735,11 @@ for /l %%? in () do (
             call :CREATE_WINDOWS_BLACKLIST_FILE
         )
     ) else (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
-        exit
+        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE_VERSION!"
+        exit /b 0
     )
 )
-exit /b
+exit /b 0
 
 :BLACKLIST_SEARCH
 if defined local_ip_%ip% (
@@ -948,7 +961,7 @@ if %WINDOWS_NOTIFICATIONS%==true (
         )
         if !windows_notifications_%ip%_seconds! geq %WINDOWS_NOTIFICATIONS_TIMER% (
             set windows_notifications_%ip%_t1=
-            %@MSGBOX% start /b cscript //nologo "lib\msgbox.vbs" "##### Blacklisted user detected at !hourtime:~0,5! #####!\N!!\N!User!@psn_plurial_asterisk!: !@blacklisted_psn_list!!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !blacklisted_iplookup_countrycode_%ip%!!\N!Detection Type: !blacklisted_detection_type!!\N!!\N!############# IP Lookup ##############!\N!!\N!Reverse IP: !blacklisted_iplookup_reverse_%ip%!!\N!Continent: !blacklisted_iplookup_continent_%ip%!!\N!Country: !blacklisted_iplookup_country_%ip%!!\N!City: !blacklisted_iplookup_city_%ip%!!\N!Organization: !blacklisted_iplookup_org_%ip%!!\N!ISP: !blacklisted_iplookup_isp_%ip%!!\N!AS: !blacklisted_iplookup_as_%ip%!!\N!AS Name: !blacklisted_iplookup_asname_%ip%!!\N!Proxy: !blacklisted_iplookup_proxy_2_%ip%!!\N!Type: !blacklisted_iplookup_type_%ip%!!\N!Mobile (cellular) connection: !blacklisted_iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !blacklisted_iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !blacklisted_iplookup_hosting_%ip%!" 69680 "!TITLE!"
+            %@MSGBOX% start /b cscript //nologo "lib\msgbox.vbs" "##### Blacklisted user detected at !hourtime:~0,5! #####!\N!!\N!User!@psn_plurial_asterisk!: !@blacklisted_psn_list!!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !blacklisted_iplookup_countrycode_%ip%!!\N!Detection Type: !blacklisted_detection_type!!\N!!\N!############# IP Lookup ##############!\N!!\N!Reverse IP: !blacklisted_iplookup_reverse_%ip%!!\N!Continent: !blacklisted_iplookup_continent_%ip%!!\N!Country: !blacklisted_iplookup_country_%ip%!!\N!City: !blacklisted_iplookup_city_%ip%!!\N!Organization: !blacklisted_iplookup_org_%ip%!!\N!ISP: !blacklisted_iplookup_isp_%ip%!!\N!AS: !blacklisted_iplookup_as_%ip%!!\N!AS Name: !blacklisted_iplookup_asname_%ip%!!\N!Proxy: !blacklisted_iplookup_proxy_2_%ip%!!\N!Type: !blacklisted_iplookup_type_%ip%!!\N!Mobile (cellular) connection: !blacklisted_iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !blacklisted_iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !blacklisted_iplookup_hosting_%ip%!" 69680 "!TITLE_VERSION!"
             if not defined windows_notifications_%ip%_t1 (
                 call :TIMER_T1 windows_notifications_%ip%
             )
@@ -960,23 +973,23 @@ if defined PS3_IP_ADDRESS (
         set skip_ps3_protection=1
         if not %PS3_PROTECTION%==false (
             if %PS3_PROTECTION%==Reload_Game (
-                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/xmb.ps3$reloadgame" && (
+                >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$reloadgame" && (
                     if %PS3_NOTIFICATIONS%==true (
                         >nul timeout /t 25 /nobreak
                     )
                 )
             ) else if %PS3_PROTECTION%==Exit_Game (
-                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/xmb.ps3$exit" && (
+                >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/xmb.ps3$exit" && (
                     if %PS3_NOTIFICATIONS%==true (
                         >nul timeout /t 15 /nobreak
                     )
                 )
             ) else if %PS3_PROTECTION%==Restart_PS3 (
-                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/restart.ps3" && (
+                >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/restart.ps3" && (
                     exit /b
                 )
             ) else if %PS3_PROTECTION%==Shutdown_PS3 (
-                >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/shutdown.ps3" && (
+                >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/shutdown.ps3" && (
                     exit /b
                 )
             )
@@ -1018,7 +1031,7 @@ if defined PS3_IP_ADDRESS (
                                 set @PS3_NOTIFICATIONS_ABOVE_SOUND=
                             )
                         )
-                        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
+                        >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
                     )
                     if not defined ps3_notifications_above_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_above_%ip%
@@ -1049,9 +1062,9 @@ if defined PS3_IP_ADDRESS (
                 )
                 if !ps3_notifications_bottom_%ip%_seconds! geq %PS3_NOTIFICATIONS_BOTTOM_TIMER% (
                     set ps3_notifications_bottom_%ip%_t1=
-                    >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/popup.ps3*Blacklisted+user!@ps3_psn_plurial_asterisk!%%3A+!@ps3_blacklisted_psn_list!+connected..."
+                    >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/popup.ps3*Blacklisted+user!@ps3_psn_plurial_asterisk!%%3A+!@ps3_blacklisted_psn_list!+connected..."
                     if not %PS3_NOTIFICATIONS_BOTTOM_SOUND%==false (
-                        >nul curl.exe -fkLs "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTOM_SOUND%"
+                        >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTOM_SOUND%"
                     )
                     if not defined ps3_notifications_bottom_%ip%_t1 (
                         call :TIMER_T1 ps3_notifications_bottom_%ip%
@@ -1099,9 +1112,6 @@ if exist "!%1!" (
     ) else (
         set @write_newline=
     )
-)
-if defined write_newline_file_path (
-    set write_newline_file_path=
 )
 exit /b
 
@@ -1170,6 +1180,7 @@ for %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
     )
     set "write_newline_file_path=%%~A"
     call :CHECK_FILE_NEWLINE write_newline_file_path
+    set write_newline_file_path=
     >>"%%~A" (
         !@write_newline!
         echo %blacklisted_psn%=!blacklisted_psn_hexadecimal_%blacklisted_psn%!
@@ -1298,43 +1309,21 @@ if defined %1_iplookup_countrycode_%2 (
 )
 exit /b 1
 
-:GET_WINDOWS_TSHARK_PATH
-for %%A in (
-    "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Wireshark.exe"
-    "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\Wireshark.exe"
-    "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Wireshark"
-    "HKLM\SOFTWARE\Classes\wireshark-capture-file\DefaultIcon"
-    "HKLM\SOFTWARE\Classes\wireshark-capture-file\Shell\open\command"
-    "HKCR\wireshark-capture-file\Shell\open\command"
-    "HKCR\wireshark-capture-file\DefaultIcon"
-) do (
-    for /f "delims=,%%" %%B in ('2^>nul reg query "%%~A" ^| find /i "REG_SZ" ^| find /i "Wireshark.exe"') do (
-        set "WINDOWS_TSHARK_PATH=%%~B"
-        set "WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH:*REG_SZ=!"
-        set "WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH:\Wireshark.exe=\tshark.exe!"
-        call :CHECK_PATH WINDOWS_TSHARK_PATH && (
-            exit /b 0
-        )
-    )
-)
-exit /b 1
-
 :CREATE_WINDOWS_TSHARK_PATH
-call :CHECK_PATH WINDOWS_TSHARK_PATH && (
-    >nul 2>&1 "!WINDOWS_TSHARK_PATH!" -v && (
-        exit /b
-    )
+call :CHECK_WINDOWS_TSHARK_PATH && (
+    exit /b 0
 )
 call :GET_WINDOWS_TSHARK_PATH && (
+    set _WINDOWS_TSHARK_PATH=
     set generate_new_settings_file=1
-    exit /b
+    exit /b 0
 )
-%@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE!"
+%@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE_VERSION!"
 start "" "https://www.wireshark.org/#download"
 if exist "Settings.ini" (
     start "" "Settings.ini"
 )
-exit
+exit /b 1
 
 :CREATE_WINDOWS_BLACKLIST_FILE
 call :CHECK_PATH WINDOWS_BLACKLIST_PATH || (
@@ -1473,6 +1462,60 @@ exit /b
 )
 exit /b
 
+:GET_WINDOWS_TSHARK_PATH
+>nul 2>&1 where "tshark.exe" && (
+    for /f "delims=" %%A in ('where "tshark.exe"') do (
+        if defined WINDOWS_TSHARK_PATH (
+            set "PREVIOUS_WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH!"
+        )
+        set "WINDOWS_TSHARK_PATH=%%~A"
+        if not "!PREVIOUS_WINDOWS_TSHARK_PATH!"=="!WINDOWS_TSHARK_PATH!" (
+            call :CHECK_WINDOWS_TSHARK_PATH && (
+                exit /b 0
+            )
+        )
+    )
+)
+for %%A in (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z) do (
+    if exist "%%A:\Program Files\Wireshark\tshark.exe" (
+        if defined WINDOWS_TSHARK_PATH (
+            set "PREVIOUS_WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH!"
+        )
+        set "WINDOWS_TSHARK_PATH=%%A:\Program Files\Wireshark\tshark.exe"
+        if not "!PREVIOUS_WINDOWS_TSHARK_PATH!"=="!WINDOWS_TSHARK_PATH!" (
+            call :CHECK_WINDOWS_TSHARK_PATH && (
+                exit /b 0
+            )
+        )
+    )
+)
+for %%A in (
+    "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Wireshark.exe"
+    "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\Wireshark.exe"
+    "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Wireshark"
+    "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Wireshark"
+    "HKLM\SOFTWARE\Classes\wireshark-capture-file\DefaultIcon"
+    "HKLM\SOFTWARE\Classes\wireshark-capture-file\Shell\open\command"
+    "HKCR\wireshark-capture-file\Shell\open\command"
+    "HKCR\wireshark-capture-file\DefaultIcon"
+) do (
+    for /f "delims=,%%" %%B in ('2^>nul reg query "%%~A" ^| find /i "REG_SZ" ^| find /i "Wireshark.exe"') do (
+        if defined WINDOWS_TSHARK_PATH (
+            set "PREVIOUS_WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH!"
+        )
+        set "WINDOWS_TSHARK_PATH=%%~B"
+        set "WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH:*REG_SZ=!"
+        set "WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH:\Wireshark.exe=\tshark.exe!"
+        set "PREVIOUS_WINDOWS_TSHARK_PATH=!WINDOWS_TSHARK_PATH!"
+        if not "!PREVIOUS_WINDOWS_TSHARK_PATH!"=="!WINDOWS_TSHARK_PATH!" (
+            call :CHECK_WINDOWS_TSHARK_PATH && (
+                exit /b 0
+            )
+        )
+    )
+)
+exit /b 1
+
 :PS3_IP_AND_MAC_ADDRESS_AUTOMATIC_ARP_ATTRIBUTION
 if defined PS3_MAC_ADDRESS (
     if not defined PS3_IP_ADDRESS (
@@ -1526,13 +1569,24 @@ for /f "tokens=1,2" %%A in ('ARP -a') do (
 )
 exit /b 1
 
+:CHECK_WINDOWS_TSHARK_PATH
+if not defined WINDOWS_TSHARK_PATH (
+    exit /b 1
+)
+call :CHECK_PATH WINDOWS_TSHARK_PATH && (
+    >nul 2>&1 "!WINDOWS_TSHARK_PATH!" -v && (
+        exit /b 0
+    )
+)
+exit /b 1
+
 :CHECK_WEBMAN_MOD_CONNECTION
 if !PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!==false (
         set @PS3_NOTIFICATIONS_ABOVE_SOUND=
 ) else (
     set "@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND=&snd=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!"
 )
-for /f %%A in ('curl.exe -fkLsw "%%{response_code}" "http://!%1!/notify.ps3mapi?msg=!TITLE: =+!+successfully+connected+to+your+PS3+console%%2E&icon=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!!@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!" -o NUL') do (
+for /f %%A in ('curl.exe -fks -w "%%{response_code}" -o NUL "http://!%1!/notify.ps3mapi?msg=!TITLE: =+!+successfully+connected+to+your+PS3+console%%2E&icon=!PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_ICON!!@PS3_NOTIFICATIONS_IP_ADDRESS_CONNECTED_SOUND!"') do (
     if "%%~A"=="200" (
         set ps3_connected_notification=1
         set "PS3_IP_ADDRESS=!%1!"
@@ -1676,7 +1730,7 @@ if defined OLD_VERSION (
     set "?=lib\msgbox_updater.vbs"
     %@ADMINISTRATOR_MANIFEST_REQUIRED%
 )
-cscript //nologo "lib\msgbox_updater.vbs" "New version found. Do you want to update ?!\N!!\N!Current version: !VERSION!!\N!Latest version   : !last_version!" 69668 "!TITLE! Updater"
+cscript //nologo "lib\msgbox_updater.vbs" "New version found. Do you want to update ?!\N!!\N!Current version: !VERSION!!\N!Latest version   : !last_version!" 69668 "!TITLE_VERSION! Updater"
 if not "!errorlevel!"=="6" (
     exit /b
 )
@@ -1687,6 +1741,6 @@ if not exist "[UPDATED]_PS3_Blacklist_Sniffer.bat" (
     exit /b
 )
 start "" "[UPDATED]_PS3_Blacklist_Sniffer.bat" && (
-    exit
+    exit 0
 )
 exit /b
