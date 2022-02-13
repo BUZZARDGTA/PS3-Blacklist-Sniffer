@@ -44,6 +44,7 @@
 [@Grub4K](https://github.com/Grub4K) - Creator of the timer algorithm.<br />
 [@Grub4K](https://github.com/Grub4K) - Creator of the the ending newline detection algorithm.<br />
 [@Grub4K](https://github.com/Grub4K) - Quick analysis of the source code to improve it.<br />
+[@Grub4K](https://github.com/Grub4K) and [@sintrode](https://github.com/sintrode) - Helped me understand the Windows 7 (x86) `find.exe` command bug with the 65001 codepage. To avoid similar problems in the future and solve it, I decided to remove the support for Windows 7, 8, 8.1 after that...<br />
 [@Grub4K](https://github.com/Grub4K) and [@sintrode](https://github.com/sintrode) - Helped me solving and understanding a Batch bug with `for` loop variables.<br />
 [@sintrode](https://github.com/sintrode) for: [How to put inner quotes in outer quotes in a `for` loop?](https://www.dostips.com/forum/viewtopic.php?t=6560)<br />
 
