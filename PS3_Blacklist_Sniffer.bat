@@ -27,7 +27,7 @@
 ::     Helped me understand the Windows 7 (x86)
 ::     "find.exe" command bug with the 65001 codepage.
 ::     To avoid similar problems in the future and solve it,
-::     I decided to remove the Windows support 7, 8, 8.1 after that...
+::     I decided to remove the support for Windows 7, 8, 8.1
 ::     @Grub4K and @Sintrode
 ::     Helped me solve and understand a Batch bug with "FOR" loop variables.
 ::     @sintrode and https://www.dostips.com/forum/viewtopic.php?t=6560
