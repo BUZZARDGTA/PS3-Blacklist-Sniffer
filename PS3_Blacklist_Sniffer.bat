@@ -558,7 +558,7 @@ for %%A in (
     "blacklisted_psn_invalid_"
     "blacklisted_ip_invalid_"
 ) do (
-    for /f "delims==" %%B in ('2^nul set %%~A') do (
+    for /f "delims==" %%B in ('2^>nul set %%~A') do (
         set "%%~B="
     )
 )
@@ -683,7 +683,7 @@ for /l %%? in () do (
                 "skip_dynamic_"
                 "skip_ps3_protection"
             ) do (
-                for /f "delims==" %%B in ('2^nul set %%~A') do (
+                for /f "delims==" %%B in ('2^>nul set %%~A') do (
                     set "%%~B="
                 )
             )
@@ -819,7 +819,7 @@ if not defined skip_static_%ip% (
 if not defined skip_dynamic_%ip% (
     set "skip_dynamic_%ip%=1"
     call :DETECTION_TYPE_FORM_PRECISION ip dynamic_ip
-    for /f "delims==" %%A in ('2^nul set skip_dynamic_try_') do (
+    for /f "delims==" %%A in ('2^>nul set skip_dynamic_try_') do (
         set "%%~A="
     )
     for /f "tokens=1,2delims==" %%A in ('findstr /c:"=!dynamic_ip!" "!WINDOWS_BLACKLIST_PATH!"') do (
