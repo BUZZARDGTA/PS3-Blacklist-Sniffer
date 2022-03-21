@@ -45,7 +45,8 @@ for /f %%A in ('copy /z "%~nx0" nul') do (
 for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo(0x08"') do (
     set "\B=%%A"
 )
-set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & "
+set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & cscript //nologo "lib\msgbox.vbs""
+set "@MSGBOX_B=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & start /b cscript //nologo "lib\msgbox.vbs""
 set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^) & exit"
 set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^) & exit)"
 setlocal EnableDelayedExpansion
@@ -75,7 +76,7 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.1.5 - 13/02/2022
+set VERSION=v2.1.6 - 21/03/2022
 set TITLE=PS3 Blacklist Sniffer
 set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE_VERSION!
@@ -87,7 +88,7 @@ for /f "tokens=4-7delims=[.] " %%A in ('ver') do (
     )
 )
 if not "!WINDOWS_VERSION!"=="10.0" (
-    %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "ERROR: Your Windows version is not compatible with PS3 Blacklist Sniffer.!\N!!\N!You need Windows 10/11 (x86/x64)." 69648 "!TITLE_VERSION!"
+    %@MSGBOX% "ERROR: Your Windows version is not compatible with PS3 Blacklist Sniffer.!\N!!\N!You need Windows 10/11 (x86/x64)." 69648 "!TITLE_VERSION!"
     exit /b 0
 )
 >nul chcp 65001
@@ -96,7 +97,7 @@ echo Searching for a new update ...
 call :UPDATER
 >nul 2>&1 sc query npcap || (
     >nul 2>&1 sc query npf || (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE_VERSION!"
+        %@MSGBOX% "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE_VERSION!"
         start "" "https://nmap.org/npcap/"
         exit /b 0
     )
@@ -107,7 +108,7 @@ for %%A in (
     "notepad.exe"
 ) do (
     >nul 2>&1 where "%%~A" || (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE_VERSION!"
+        %@MSGBOX% "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE_VERSION!"
         exit /b 0
     )
 )
@@ -557,10 +558,8 @@ for %%A in (
     "blacklisted_psn_invalid_"
     "blacklisted_ip_invalid_"
 ) do (
-    >nul 2>&1 set %%~A && (
-        for /f "delims==" %%B in ('set %%~A') do (
-            set "%%~B="
-        )
+    for /f "delims==" %%B in ('2^nul set %%~A') do (
+        set "%%~B="
     )
 )
 if exist "!WINDOWS_BLACKLIST_PATH!" (
@@ -644,7 +643,7 @@ echo:
         )
     )
     if not defined notepad_pid (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find any valid users in your 'WINDOWS_BLACKLIST_PATH' setting.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE_VERSION!"
+        %@MSGBOX% "!TITLE! could not find any valid users in your 'WINDOWS_BLACKLIST_PATH' setting.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE_VERSION!"
         start "" "notepad.exe" "!WINDOWS_BLACKLIST_PATH!"
         for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq notepad.exe" ^| find /i "notepad.exe"') do (
             set "notepad_pid=%%~A"
@@ -684,10 +683,8 @@ for /l %%? in () do (
                 "skip_dynamic_"
                 "skip_ps3_protection"
             ) do (
-                >nul 2>&1 set %%~A && (
-                    for /f "delims==" %%B in ('set %%~A') do (
-                        set "%%~B="
-                    )
+                for /f "delims==" %%B in ('2^nul set %%~A') do (
+                    set "%%~B="
                 )
             )
             for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
@@ -735,7 +732,7 @@ for /l %%? in () do (
             call :CREATE_WINDOWS_BLACKLIST_FILE
         )
     ) else (
-        %@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE_VERSION!"
+        %@MSGBOX% "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE_VERSION!"
         exit /b 0
     )
 )
@@ -822,10 +819,8 @@ if not defined skip_static_%ip% (
 if not defined skip_dynamic_%ip% (
     set "skip_dynamic_%ip%=1"
     call :DETECTION_TYPE_FORM_PRECISION ip dynamic_ip
-    >nul 2>&1 set skip_dynamic_try_ && (
-        for /f "delims==" %%A in ('set skip_dynamic_try_') do (
-            set "%%~A="
-        )
+    for /f "delims==" %%A in ('2^nul set skip_dynamic_try_') do (
+        set "%%~A="
     )
     for /f "tokens=1,2delims==" %%A in ('findstr /c:"=!dynamic_ip!" "!WINDOWS_BLACKLIST_PATH!"') do (
         if not "%%~A"=="" (
@@ -961,7 +956,7 @@ if %WINDOWS_NOTIFICATIONS%==true (
         )
         if !windows_notifications_%ip%_seconds! geq %WINDOWS_NOTIFICATIONS_TIMER% (
             set windows_notifications_%ip%_t1=
-            %@MSGBOX% start /b cscript //nologo "lib\msgbox.vbs" "##### Blacklisted user detected at !hourtime:~0,5! #####!\N!!\N!User!@psn_plurial_asterisk!: !@blacklisted_psn_list!!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !blacklisted_iplookup_countrycode_%ip%!!\N!Detection Type: !blacklisted_detection_type!!\N!!\N!############# IP Lookup ##############!\N!!\N!Reverse IP: !blacklisted_iplookup_reverse_%ip%!!\N!Continent: !blacklisted_iplookup_continent_%ip%!!\N!Country: !blacklisted_iplookup_country_%ip%!!\N!City: !blacklisted_iplookup_city_%ip%!!\N!Organization: !blacklisted_iplookup_org_%ip%!!\N!ISP: !blacklisted_iplookup_isp_%ip%!!\N!AS: !blacklisted_iplookup_as_%ip%!!\N!AS Name: !blacklisted_iplookup_asname_%ip%!!\N!Proxy: !blacklisted_iplookup_proxy_2_%ip%!!\N!Type: !blacklisted_iplookup_type_%ip%!!\N!Mobile (cellular) connection: !blacklisted_iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !blacklisted_iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !blacklisted_iplookup_hosting_%ip%!" 69680 "!TITLE_VERSION!"
+            %@MSGBOX_B% "##### Blacklisted user detected at !hourtime:~0,5! #####!\N!!\N!User!@psn_plurial_asterisk!: !@blacklisted_psn_list!!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !blacklisted_iplookup_countrycode_%ip%!!\N!Detection Type: !blacklisted_detection_type!!\N!!\N!############# IP Lookup ##############!\N!!\N!Reverse IP: !blacklisted_iplookup_reverse_%ip%!!\N!Continent: !blacklisted_iplookup_continent_%ip%!!\N!Country: !blacklisted_iplookup_country_%ip%!!\N!City: !blacklisted_iplookup_city_%ip%!!\N!Organization: !blacklisted_iplookup_org_%ip%!!\N!ISP: !blacklisted_iplookup_isp_%ip%!!\N!AS: !blacklisted_iplookup_as_%ip%!!\N!AS Name: !blacklisted_iplookup_asname_%ip%!!\N!Proxy: !blacklisted_iplookup_proxy_2_%ip%!!\N!Type: !blacklisted_iplookup_type_%ip%!!\N!Mobile (cellular) connection: !blacklisted_iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !blacklisted_iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !blacklisted_iplookup_hosting_%ip%!" 69680 "!TITLE_VERSION!"
             if not defined windows_notifications_%ip%_t1 (
                 call :TIMER_T1 windows_notifications_%ip%
             )
@@ -1085,7 +1080,7 @@ for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "%1_t2=(((1%%A*60)
 exit /b
 
 :BLACKLIST_WRITE
->nul findstr /bec:"!%1!=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
+>nul findstr /xc:"!%1!=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
     call :CHECK_FILE_NEWLINE WINDOWS_BLACKLIST_PATH
     >>"!WINDOWS_BLACKLIST_PATH!" (
         !@write_newline!
@@ -1318,7 +1313,7 @@ call :GET_WINDOWS_TSHARK_PATH && (
     set generate_new_settings_file=1
     exit /b 0
 )
-%@MSGBOX% cscript //nologo "lib\msgbox.vbs" "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE_VERSION!"
+%@MSGBOX% "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE_VERSION!"
 start "" "https://www.wireshark.org/#download"
 if exist "Settings.ini" (
     start "" "Settings.ini"
@@ -1731,7 +1726,7 @@ if defined OLD_VERSION (
     %@ADMINISTRATOR_MANIFEST_REQUIRED%
 )
 cscript //nologo "lib\msgbox_updater.vbs" "New version found. Do you want to update ?!\N!!\N!Current version: !VERSION!!\N!Latest version   : !last_version!" 69668 "!TITLE_VERSION! Updater"
-if not "!errorlevel!"=="6" (
+if not !errorlevel!==6 (
     exit /b
 )
 curl.exe --create-dirs -f#ko "[UPDATED]_PS3_Blacklist_Sniffer.bat" "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/main/PS3_Blacklist_Sniffer.bat" || (
