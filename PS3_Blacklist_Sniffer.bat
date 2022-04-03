@@ -76,7 +76,7 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.1.6 - 21/03/2022
+set VERSION=v2.1.7 - 03/04/2022
 set TITLE=PS3 Blacklist Sniffer
 set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE_VERSION!
@@ -1321,7 +1321,7 @@ if exist "Settings.ini" (
 exit /b 1
 
 :CREATE_WINDOWS_BLACKLIST_FILE
-call :CHECK_PATH WINDOWS_BLACKLIST_PATH || (
+call :CHECK_PATH_EXIST WINDOWS_BLACKLIST_PATH || (
     for %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         if not exist "%%~dpA" (
             md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
@@ -1345,7 +1345,7 @@ call :CHECK_PATH WINDOWS_BLACKLIST_PATH || (
 exit /b
 
 :CREATE_WINDOWS_RESULTS_LOGGING_FILE
-call :CHECK_PATH WINDOWS_RESULTS_LOGGING_PATH || (
+call :CHECK_PATH_EXIST WINDOWS_RESULTS_LOGGING_PATH || (
     for %%A in ("!WINDOWS_RESULTS_LOGGING_PATH!") do (
         if not exist "%%~dpA" (
             md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_RESULTS_LOGGING_PATH%
@@ -1568,7 +1568,7 @@ exit /b 1
 if not defined WINDOWS_TSHARK_PATH (
     exit /b 1
 )
-call :CHECK_PATH WINDOWS_TSHARK_PATH && (
+call :CHECK_PATH_EXIST WINDOWS_TSHARK_PATH && (
     >nul 2>&1 "!WINDOWS_TSHARK_PATH!" -v && (
         exit /b 0
     )
@@ -1613,24 +1613,25 @@ for %%A in ("lib\msgbox.vbs") do (
 )
 exit /b
 
-:CHECK_PATH
+:CHECK_PATH_EXIST
 if not defined %1 exit /b 1
 set "%1=!%1:"=!"
+if not defined %1 exit /b 1
 set "%1=!%1:/=\!"
-:CHECK_PATH_STRIP_WHITE_SPACES
+:CHECK_PATH_EXIST_STRIP_WHITE_SPACES
 if "!%1:~0,1!"==" " (
 set "%1=!%1:~1!"
-goto :CHECK_PATH_STRIP_WHITE_SPACES
+goto :CHECK_PATH_EXIST_STRIP_WHITE_SPACES
 )
 :_CHECK_PATH_STRIP_WHITE_SPACES
 if "!%1:~-1!"==" " (
 set "%1=!%1:~0,-1!"
 goto :_CHECK_PATH_STRIP_WHITE_SPACES
 )
-:CHECK_PATH_STRIP_SLASHES
+:CHECK_PATH_EXIST_STRIP_SLASHES
 if "!%1:~-2!"=="\\" (
 set "%1=!%1:~0,-1!"
-goto :CHECK_PATH_STRIP_SLASHES
+goto :CHECK_PATH_EXIST_STRIP_SLASHES
 )
 if exist "!%1!" exit /b 0
 exit /b 1
