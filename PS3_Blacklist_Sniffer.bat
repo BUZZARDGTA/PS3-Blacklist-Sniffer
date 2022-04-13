@@ -45,13 +45,13 @@ for /f %%A in ('copy /z "%~nx0" nul') do (
 for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo(0x08"') do (
     set "\B=%%A"
 )
-set "@MSGBOX=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & cscript //nologo "lib\msgbox.vbs""
-set "@MSGBOX_B=(if not exist "lib\msgbox.vbs" (call :MSGBOX_GENERATION)) & start /b cscript //nologo "lib\msgbox.vbs""
-set "@ADMINISTRATOR_MANIFEST_REQUIRED=mshta vbscript:Execute^("msgbox ""!TITLE! does not have enough permissions to write '!?!' to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^) & exit"
-set "@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME=(mshta vbscript:Execute^("msgbox ""The custom PATH you entered for '?' in 'Settings.ini' is invalid or !TITLE! does not have enough permissions to write to your disk at this location."" ^& Chr(10) ^& Chr(10) ^& ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^) & exit)"
+set @MSGBOX=(if not exist "lib\msgbox.vbs" call :MSGBOX_GENERATION)^& cscript //nologo "lib\msgbox.vbs"
+set @MSGBOX_B=(if not exist "lib\msgbox.vbs" call :MSGBOX_GENERATION)^& start /b cscript //nologo "lib\msgbox.vbs"
+set @TIMER_T1=for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "?_t1=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100"
+set @TIMER_T2=for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "?_t2=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100, ?_tDiff=?_t2-?_t1, ?_tDiff+=((~(?_tDiff&(1<<31))>>31)+1)*8640000, ?_seconds=?_tDiff/100"
 setlocal EnableDelayedExpansion
-set "@LOOKUP_PSN_LENGTH=`136`1160`"
-set "@LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`"
+set @LOOKUP_PSN_LENGTH=`136`1160`
+set @LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`
 (set \N=^
 %=leave unchanged=%
 )
@@ -61,7 +61,7 @@ if defined ProgramFiles(x86) (
     set "PATH=!PATH!;lib\curl\x86"
 )
 if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
-    for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq cmd.exe" ^| find /i "PS3 Blacklist Sniffer"') do (
+    for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq cmd.exe" ^| findstr /rxc:".*,\".*!TITLE!.*\""') do (
         >nul 2>&1 taskkill /f /pid "%%~A" /t
     )
     >nul move /y "%~nx0" "PS3_Blacklist_Sniffer.bat" && (
@@ -76,7 +76,7 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.1.7 - 03/04/2022
+set VERSION=v2.1.8 - 13/04/2022
 set TITLE=PS3 Blacklist Sniffer
 set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE_VERSION!
@@ -88,7 +88,7 @@ for /f "tokens=4-7delims=[.] " %%A in ('ver') do (
     )
 )
 if not "!WINDOWS_VERSION!"=="10.0" (
-    %@MSGBOX% "ERROR: Your Windows version is not compatible with PS3 Blacklist Sniffer.!\N!!\N!You need Windows 10/11 (x86/x64)." 69648 "!TITLE_VERSION!"
+    %@MSGBOX% "Your Windows version is not compatible with PS3 Blacklist Sniffer.!\N!!\N!You need Windows 10/11 (x86/x64)." 69648 "!TITLE_VERSION!"
     exit /b 0
 )
 >nul chcp 65001
@@ -431,8 +431,9 @@ if exist "!WINDOWS_BLACKLIST_PATH!" (
                 >"lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
                     type "lib\tmp\blacklisted_psn_hexadecimal.tmp" | find /v "%%~A="
                 ) || (
-                    set "?=lib\tmp\_blacklisted_psn_hexadecimal.tmp"
-                    %@ADMINISTRATOR_MANIFEST_REQUIRED%
+                    if not exist "lib\tmp\_blacklisted_psn_hexadecimal.tmp" (
+                        call :ERROR_FATAL WRITING_FAILURE "lib\tmp\_blacklisted_psn_hexadecimal.tmp"
+                    )
                 )
             )
         )
@@ -547,8 +548,8 @@ if defined ps3_connected_notification (
     echo Error: Unable to connect to your PS3 console: ^|IP:!PS3_IP_ADDRESS!^| ^|MAC:!PS3_MAC_ADDRESS!^| ...
     echo Make sure you have the following:
     echo - Your PS3 console must be turned on.
-    echo - If you have a HEN jailbreaked console, make sure HEN is enabled.
     echo - webMAN MOD is correctly configured on your PS3 console.
+    echo - If you have a HEN jailbreaked console, make sure HEN is enabled.
     if not defined PS3_IP_ADDRESS (
         echo PS3 notifications disabled for this session.
     )
@@ -638,14 +639,14 @@ echo:
 :WAIT_FILE_SAVED_WINDOWS_BLACKLIST_PATH
 >nul 2>&1 set blacklisted_psn_hexadecimal_ || (
     if defined notepad_pid (
-        tasklist /v /fo csv /fi "pid eq !notepad_pid!" | >nul find /i "notepad.exe" || (
+        tasklist /fo csv /fi "pid eq !notepad_pid!" | >nul find /i """notepad.exe""" || (
             set notepad_pid=
         )
     )
     if not defined notepad_pid (
         %@MSGBOX% "!TITLE! could not find any valid users in your 'WINDOWS_BLACKLIST_PATH' setting.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE_VERSION!"
         start "" "notepad.exe" "!WINDOWS_BLACKLIST_PATH!"
-        for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq notepad.exe" ^| find /i "notepad.exe"') do (
+        for /f "tokens=2delims=," %%A in ('tasklist /fo csv /fi "imagename eq notepad.exe" ^| find /i """notepad.exe"""') do (
             set "notepad_pid=%%~A"
         )
     )
@@ -939,18 +940,18 @@ if %WINDOWS_NOTIFICATIONS%==true (
     )
     if %WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL%==true (
         if defined windows_notifications_packets_interval_%ip%_t1 (
-            call :TIMER_T2 windows_notifications_packets_interval_%ip%
+            %@TIMER_T2:?=windows_notifications_packets_interval_!ip!%
         ) else (
             set windows_notifications_packets_interval_%ip%_seconds=%WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER%
         )
         if !windows_notifications_packets_interval_%ip%_seconds! lss %WINDOWS_NOTIFICATIONS_PACKETS_INTERVAL_TIMER% (
             set skip_windows_notifications=1
         )
-        call :TIMER_T1 windows_notifications_packets_interval_%ip%
+        %@TIMER_T1:?=windows_notifications_packets_interval_!ip!%
     )
     if not defined skip_windows_notifications (
         if defined windows_notifications_%ip%_t1 (
-            call :TIMER_T2 windows_notifications_%ip%
+            %@TIMER_T2:?=windows_notifications_!ip!%
         ) else (
             set windows_notifications_%ip%_seconds=%WINDOWS_NOTIFICATIONS_TIMER%
         )
@@ -958,7 +959,7 @@ if %WINDOWS_NOTIFICATIONS%==true (
             set windows_notifications_%ip%_t1=
             %@MSGBOX_B% "##### Blacklisted user detected at !hourtime:~0,5! #####!\N!!\N!User!@psn_plurial_asterisk!: !@blacklisted_psn_list!!\N!IP: %ip%!\N!Port: %port%!\N!Country Code: !blacklisted_iplookup_countrycode_%ip%!!\N!Detection Type: !blacklisted_detection_type!!\N!!\N!############# IP Lookup ##############!\N!!\N!Reverse IP: !blacklisted_iplookup_reverse_%ip%!!\N!Continent: !blacklisted_iplookup_continent_%ip%!!\N!Country: !blacklisted_iplookup_country_%ip%!!\N!City: !blacklisted_iplookup_city_%ip%!!\N!Organization: !blacklisted_iplookup_org_%ip%!!\N!ISP: !blacklisted_iplookup_isp_%ip%!!\N!AS: !blacklisted_iplookup_as_%ip%!!\N!AS Name: !blacklisted_iplookup_asname_%ip%!!\N!Proxy: !blacklisted_iplookup_proxy_2_%ip%!!\N!Type: !blacklisted_iplookup_type_%ip%!!\N!Mobile (cellular) connection: !blacklisted_iplookup_mobile_%ip%!!\N!Proxy, VPN or Tor exit address: !blacklisted_iplookup_proxy_%ip%!!\N!Hosting, colocated or data center: !blacklisted_iplookup_hosting_%ip%!" 69680 "!TITLE_VERSION!"
             if not defined windows_notifications_%ip%_t1 (
-                call :TIMER_T1 windows_notifications_%ip%
+                %@TIMER_T1:?=windows_notifications_!ip!%
             )
         )
     )
@@ -997,18 +998,18 @@ if defined PS3_IP_ADDRESS (
             )
             if %PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL%==true (
                 if defined ps3_notifications_above_packets_interval_%ip%_t1 (
-                    call :TIMER_T2 ps3_notifications_above_packets_interval_%ip%
+                    %@TIMER_T2:?=ps3_notifications_above_packets_interval_!ip!%
                 ) else (
                     set ps3_notifications_above_packets_interval_%ip%_seconds=%PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER%
                 )
                 if !ps3_notifications_above_packets_interval_%ip%_seconds! lss %PS3_NOTIFICATIONS_ABOVE_PACKETS_INTERVAL_TIMER% (
                     set skip_ps3_notifications_above=1
                 )
-                call :TIMER_T1 ps3_notifications_above_packets_interval_%ip%
+                %@TIMER_T1:?=ps3_notifications_above_packets_interval_!ip!%
             )
             if not defined skip_ps3_notifications_above (
                 if defined ps3_notifications_above_%ip%_t1 (
-                    call :TIMER_T2 ps3_notifications_above_%ip%
+                    %@TIMER_T2:?=ps3_notifications_above_!ip!%
                 ) else (
                     set ps3_notifications_above_%ip%_seconds=%PS3_NOTIFICATIONS_ABOVE_TIMER%
                 )
@@ -1029,7 +1030,7 @@ if defined PS3_IP_ADDRESS (
                         >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/notify.ps3mapi?msg=Blacklisted+user!@ps3_psn_plurial_asterisk!+%%5B%blacklisted_psn%%%5D+detected%%3A%%0D%%0AIP%%3A+%ip%%%0D%%0APort%%3A+%port%%%0D%%0ACountry%%3A+!blacklisted_iplookup_countrycode_%ip%!&icon=!PS3_NOTIFICATIONS_ABOVE_ICON!!@PS3_NOTIFICATIONS_ABOVE_SOUND!"
                     )
                     if not defined ps3_notifications_above_%ip%_t1 (
-                        call :TIMER_T1 ps3_notifications_above_%ip%
+                        %@TIMER_T1:?=ps3_notifications_above_!ip!%
                     )
                 )
             )
@@ -1040,18 +1041,18 @@ if defined PS3_IP_ADDRESS (
             )
             if %PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL%==true (
                 if defined ps3_notifications_bottom_packets_interval_%ip%_t1 (
-                    call :TIMER_T2 ps3_notifications_bottom_packets_interval_%ip%
+                    %@TIMER_T2:?=ps3_notifications_bottom_packets_interval_!ip!%
                 ) else (
                     set ps3_notifications_bottom_packets_interval_%ip%_seconds=%PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER%
                 )
                 if !ps3_notifications_bottom_packets_interval_%ip%_seconds! lss %PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER% (
                     set skip_ps3_notifications_bottom=1
                 )
-                call :TIMER_T1 ps3_notifications_bottom_packets_interval_%ip%
+                %@TIMER_T1:?=ps3_notifications_bottom_packets_interval_!ip!%
             )
             if not defined skip_ps3_notifications_bottom (
                 if defined ps3_notifications_bottom_%ip%_t1 (
-                    call :TIMER_T2 ps3_notifications_bottom_%ip%
+                    %@TIMER_T2:?=ps3_notifications_bottom_!ip!%
                 ) else (
                     set ps3_notifications_bottom_%ip%_seconds=%PS3_NOTIFICATIONS_BOTTOM_TIMER%
                 )
@@ -1062,7 +1063,7 @@ if defined PS3_IP_ADDRESS (
                         >nul curl.exe -fks "http://%PS3_IP_ADDRESS%/beep.ps3?%PS3_NOTIFICATIONS_BOTTOM_SOUND%"
                     )
                     if not defined ps3_notifications_bottom_%ip%_t1 (
-                        call :TIMER_T1 ps3_notifications_bottom_%ip%
+                        %@TIMER_T1:?=ps3_notifications_bottom_!ip!%
                     )
                 )
             )
@@ -1071,21 +1072,15 @@ if defined PS3_IP_ADDRESS (
 )
 exit /b
 
-:TIMER_T1
-for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "%1_t1=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100"
-exit /b
-
-:TIMER_T2
-for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "%1_t2=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100, %1_tDiff=%1_t2-%1_t1, %1_tDiff+=((~(%1_tDiff&(1<<31))>>31)+1)*8640000, %1_seconds=%1_tDiff/100"
-exit /b
-
 :BLACKLIST_WRITE
 >nul findstr /xc:"!%1!=%ip%" "!WINDOWS_BLACKLIST_PATH!" || (
     call :CHECK_FILE_NEWLINE WINDOWS_BLACKLIST_PATH
     >>"!WINDOWS_BLACKLIST_PATH!" (
         !@write_newline!
         echo !%1!=%ip%
-    ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+    ) || (
+        call :ERROR_FATAL WRITING_FAILURE_OR_INVALID_FILENAME WINDOWS_BLACKLIST_PATH
+    )
 )
 exit /b
 
@@ -1169,8 +1164,7 @@ set blacklisted_psn_ascii_!blacklisted_psn_hexadecimal_%blacklisted_psn%!=%black
 for %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
     if not exist "%%~dpA" (
         md "%%~dpA" || (
-            set "?=%%~dpA"
-            %@ADMINISTRATOR_MANIFEST_REQUIRED%
+            call :ERROR_FATAL WRITING_FAILURE "%%~dpA"
         )
     )
     set "write_newline_file_path=%%~A"
@@ -1180,8 +1174,7 @@ for %%A in ("lib\tmp\blacklisted_psn_hexadecimal.tmp") do (
         !@write_newline!
         echo %blacklisted_psn%=!blacklisted_psn_hexadecimal_%blacklisted_psn%!
     ) || (
-        set "?=%%~A"
-        %@ADMINISTRATOR_MANIFEST_REQUIRED%
+        call :ERROR_FATAL WRITING_FAILURE "%%~A"
     )
 )
 exit /b 0
@@ -1265,8 +1258,7 @@ if exist "lib\tmp\%1_iplookup_%2.tmp" (
     for %%A in ("lib\tmp\%1_iplookup.tmp") do (
         if not exist "%%~dpA" (
             md "%%~dpA" || (
-                set "?=%%~dpA"
-                %@ADMINISTRATOR_MANIFEST_REQUIRED%
+                call :ERROR_FATAL WRITING_FAILURE "%%~dpA"
             )
         )
     )
@@ -1277,8 +1269,7 @@ if exist "lib\tmp\%1_iplookup_%2.tmp" (
         >>"lib\tmp\%1_iplookup_%2.tmp" (
             echo %%~A=!%1_iplookup_%%~A_%2!
         ) || (
-            set "?=%%~A"
-            %@ADMINISTRATOR_MANIFEST_REQUIRED%
+            call :ERROR_FATAL WRITING_FAILURE "%%~A"
         )
     )
 )
@@ -1324,7 +1315,9 @@ exit /b 1
 call :CHECK_PATH_EXIST WINDOWS_BLACKLIST_PATH || (
     for %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         if not exist "%%~dpA" (
-            md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+            md "%%~dpA" || (
+                call :ERROR_FATAL WRITING_FAILURE_OR_INVALID_FILENAME WINDOWS_BLACKLIST_PATH
+            )
         )
         >"%%~A" (
             echo ;;-----------------------------------------------------------------------
@@ -1339,7 +1332,9 @@ call :CHECK_PATH_EXIST WINDOWS_BLACKLIST_PATH || (
             echo ;;Your blacklist MUST be formatted in the following way in order to work:
             echo ;;^<PSN USERNAME^>=^<IP ADDRESS^>
             echo ;;-----------------------------------------------------------------------
-        ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_BLACKLIST_PATH%
+        ) || (
+            call :ERROR_FATAL WRITING_FAILURE_OR_INVALID_FILENAME WINDOWS_BLACKLIST_PATH
+        )
     )
 )
 exit /b
@@ -1348,11 +1343,15 @@ exit /b
 call :CHECK_PATH_EXIST WINDOWS_RESULTS_LOGGING_PATH || (
     for %%A in ("!WINDOWS_RESULTS_LOGGING_PATH!") do (
         if not exist "%%~dpA" (
-            md "%%~dpA" || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_RESULTS_LOGGING_PATH%
+            md "%%~dpA" || (
+                call :ERROR_FATAL WRITING_FAILURE_OR_INVALID_FILENAME WINDOWS_RESULTS_LOGGING_PATH
+            )
         )
         >"%%~A" (
             set x=
-        ) || %@ADMINISTRATOR_MANIFEST_REQUIRED_OR_INVALID_FILENAME:?=WINDOWS_RESULTS_LOGGING_PATH%
+        ) || (
+            call :ERROR_FATAL WRITING_FAILURE_OR_INVALID_FILENAME WINDOWS_RESULTS_LOGGING_PATH
+        )
     )
 )
 exit /b
@@ -1452,8 +1451,7 @@ exit /b
     echo PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER=!PS3_NOTIFICATIONS_BOTTOM_PACKETS_INTERVAL_TIMER!
     echo DETECTION_TYPE_DYNAMIC_IP_PRECISION=!DETECTION_TYPE_DYNAMIC_IP_PRECISION!
 ) || (
-    set "?=Settings.ini"
-    %@ADMINISTRATOR_MANIFEST_REQUIRED%
+    call :ERROR_FATAL WRITING_FAILURE "Settings.ini"
 )
 exit /b
 
@@ -1600,15 +1598,13 @@ exit /b 1
 for %%A in ("lib\msgbox.vbs") do (
     if not exist "%%~dpA" (
         md "%%~dpA" || (
-            set "?=%%~dpA"
-            %@ADMINISTRATOR_MANIFEST_REQUIRED%
+            call :ERROR_FATAL WRITING_FAILURE "%%~dpA"
         )
     )
     >"%%~A" (
         echo MsgBox WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)
     ) || (
-        set "?=%%~A"
-        %@ADMINISTRATOR_MANIFEST_REQUIRED%
+        call :ERROR_FATAL WRITING_FAILURE "%%~A"
     )
 )
 exit /b
@@ -1694,6 +1690,63 @@ set "x=%~1"
 if not "!x:~1!"=="" if "!x:~2!"=="" for /f "delims=0123456789abcdefABCDEF" %%A in ("%~1") do exit /b 1
 exit /b 0
 
+:GET_FILE_ATTRIBUTES
+if not exist "%~1" (
+    exit /b
+)
+for %%A in ("%~1") do (
+    set "attributes=%%~aA"
+)
+for /f "delims=" %%A in ('2^>nul attrib "%~1"') do (
+    set "_attributes=%%A"
+)
+for /f "tokens=1*delims=:" %%A in ("$!_attributes!$") do (
+    if not "%%B"=="" (
+        set "_attributes=%%A"
+        set "_attributes=!_attributes:~1,-1!"
+        if defined _attributes (
+            set "attributes=!attributes!!_attributes!"
+        )
+    )
+)
+if defined _attributes (
+    set _attributes=
+)
+if defined attributes (
+    for %%A in (-," ") do (
+        if defined attributes (
+            set "attributes=!attributes:%%~A=!"
+        )
+    )
+    if defined attributes (
+        for /f "delims==" %%A in ('2^>nul set attribute_[') do (
+            set %%A=
+        )
+        for /l %%A in (0,1,52) do (
+            for %%B in ("!attributes:~%%A,1!") do (
+                if not "%%~B"=="" (
+                    for %%C in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+                        if /i "%%C"=="%%~B" (
+                            if not defined attribute_[%%C] (
+                                set attribute_[%%C]=1
+                                if defined _attributes (
+                                    if "!_attributes:%%C=!"=="!_attributes!" (
+                                        set "_attributes=!_attributes!%%C"
+                                    )
+                                ) else (
+                                    set "_attributes=%%C"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        set "attributes=!_attributes!"
+    )
+)
+exit /b
+
 :UPDATER
 for /f "delims=" %%A in ('curl.exe -fks "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/version/version.txt"') do (
     set "last_version=%%~A"
@@ -1723,8 +1776,7 @@ if defined OLD_VERSION (
     echo End If
     echo wscript.quit 7
 ) || (
-    set "?=lib\msgbox_updater.vbs"
-    %@ADMINISTRATOR_MANIFEST_REQUIRED%
+    call :ERROR_FATAL WRITING_FAILURE "lib\msgbox_updater.vbs"
 )
 cscript //nologo "lib\msgbox_updater.vbs" "New version found. Do you want to update ?!\N!!\N!Current version: !VERSION!!\N!Latest version   : !last_version!" 69668 "!TITLE_VERSION! Updater"
 if not !errorlevel!==6 (
@@ -1740,3 +1792,35 @@ start "" "[UPDATED]_PS3_Blacklist_Sniffer.bat" && (
     exit 0
 )
 exit /b
+
+:ERROR_FATAL
+if "%~1"=="WRITING_FAILURE" (
+    call :GET_FILE_ATTRIBUTES "%~2"
+    if defined attributes (
+        if not "!attributes:R=!"=="!attributes!" (
+            mshta vbscript:Execute^("msgbox ""!TITLE! cannot write '%~2' to your disk at this location because it is in read-only."",69648,""!TITLE_VERSION!"":close"^)
+            exit 0
+        )
+    )
+    >nul 2>&1 dism || (
+        mshta vbscript:Execute^("msgbox ""!TITLE! cannot write '%~2' to your disk at this location because it does not have administrator permissions."" & Chr(10) & Chr(10) & ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^)
+        exit 0
+    )
+    mshta vbscript:Execute^("msgbox ""!TITLE! cannot write '%~2' to your disk at this location for an unknown reason."",69648,""!TITLE_VERSION!"":close"^)
+    exit 0
+) else if "%~1"=="WRITING_FAILURE_OR_INVALID_FILENAME" (
+    call :GET_FILE_ATTRIBUTES "!%2!"
+    if defined attributes (
+        if not "!attributes:R=!"=="!attributes!" (
+            mshta vbscript:Execute^("msgbox ""!TITLE! cannot write '%~2' in 'Settings.ini' to your disk at this location because it is in read-only."",69648,""!TITLE_VERSION!"":close"^)
+            exit 0
+        )
+    )
+    >nul 2>&1 dism || (
+        mshta vbscript:Execute^("msgbox ""!TITLE! cannot write '%~2' in 'Settings.ini' to your disk at this location because it does not have administrator permissions."" & Chr(10) & Chr(10) & ""Run '%~nx0' as administrator and try again."",69648,""!TITLE_VERSION!"":close"^)
+        exit 0
+    )
+    mshta vbscript:Execute^("msgbox ""!TITLE! cannot write '%~2' in 'Settings.ini' to your disk at this location for an unknown reason or it's custom PATH you've entered is invalid."",69648,""!TITLE_VERSION!"":close"^)
+    exit 0
+)
+exit 0
