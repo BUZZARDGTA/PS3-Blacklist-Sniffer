@@ -76,7 +76,7 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.1.9 - 24/04/2022
+set VERSION=v2.2.0 - 25/04/2022
 set TITLE=PS3 Blacklist Sniffer
 set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE_VERSION!
@@ -1703,7 +1703,7 @@ for %%A in ("%~1") do (
 for /f "delims=" %%A in ('2^>nul attrib "%~1"') do (
     set "_attributes=%%A"
 )
-for /f "tokens=1*delims=:" %%A in ("$!_attributes!$") do (
+for /f "tokens=1*delims=:" %%A in ("$!_attributes!") do (
     if not "%%B"=="" (
         set "_attributes=%%A"
         set "_attributes=!_attributes:~1,-1!"
@@ -1711,9 +1711,9 @@ for /f "tokens=1*delims=:" %%A in ("$!_attributes!$") do (
             set "attributes=!attributes!!_attributes!"
         )
     )
-)
-if defined _attributes (
-    set _attributes=
+    if defined _attributes (
+        set _attributes=
+    )
 )
 if defined attributes (
     for %%A in (-," ") do (
