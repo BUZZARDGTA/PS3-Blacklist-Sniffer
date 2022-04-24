@@ -61,7 +61,7 @@ if defined ProgramFiles(x86) (
     set "PATH=!PATH!;lib\curl\x86"
 )
 if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
-    for /f "tokens=2delims=," %%A in ('tasklist /v /fo csv /fi "imagename eq cmd.exe" ^| findstr /rxc:".*,\".*!TITLE!.*\""') do (
+    for /f "tokens=2delims=," %%A in ('2^>nul tasklist /v /nh /fo csv /fi "imagename eq cmd.exe" ^| findstr /rxc:".*,\".*!TITLE!.*\""') do (
         >nul 2>&1 taskkill /f /pid "%%~A" /t
     )
     >nul move /y "%~nx0" "PS3_Blacklist_Sniffer.bat" && (
@@ -76,7 +76,7 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.1.8 - 13/04/2022
+set VERSION=v2.1.9 - 24/04/2022
 set TITLE=PS3 Blacklist Sniffer
 set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE_VERSION!
@@ -103,12 +103,12 @@ call :UPDATER
     )
 )
 for %%A in (
-    "ARP.EXE"
-    "curl.exe"
-    "notepad.exe"
+    ARP.EXE
+    curl.exe
+    notepad.exe
 ) do (
-    >nul 2>&1 where "%%~A" || (
-        %@MSGBOX% "!TITLE! could not find '%%~A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE_VERSION!"
+    >nul 2>&1 where "%%A" || (
+        %@MSGBOX% "!TITLE! could not find '%%A' executable in your system PATH.!\N!!\N!Your system does not meet the minimum software requirements to use !TITLE!." 69648 "!TITLE_VERSION!"
         exit /b 0
     )
 )
@@ -122,7 +122,7 @@ for %%A in (
     "@PS3_NOTIFICATIONS_ABOVE_SOUND"
     "settings_number"
     "generate_new_settings_file"
-    "notepad_pid"
+    "pid_notepad"
     "ps3_connected_notification"
 ) do (
     if defined %%~A (
@@ -556,98 +556,101 @@ if defined ps3_connected_notification (
 )
 echo:
 for %%A in (
-    "blacklisted_psn_invalid_"
-    "blacklisted_ip_invalid_"
+    blacklisted_invalid_psn
+    blacklisted_invalid_ip
 ) do (
-    for /f "delims==" %%B in ('2^>nul set %%~A') do (
-        set "%%~B="
+    if defined %%A (
+        set %%A=
     )
 )
 if exist "!WINDOWS_BLACKLIST_PATH!" (
     echo Computing ascii PSN usernames to hexadecimal in memory and
-    echo checking "!WINDOWS_BLACKLIST_PATH!" PSN Usernames and IP Addresses ...
+    echo checking "!WINDOWS_BLACKLIST_PATH!" PSN Usernames and IP addresses ...
     for /f "usebackqtokens=1,2delims==" %%A in ("!WINDOWS_BLACKLIST_PATH!") do (
         for %%C in (
-            "blacklisted_psn_disp"
-            "blacklisted_ip_disp"
-            "invalid_result_found"
+            blacklisted_psn_padding
+            blacklisted_ip_padding
+            blacklisted_invalid_found
         ) do (
-            if defined %%~C (
-                set %%~C=
+            if defined %%C (
+                set %%C=
             )
         )
         if not "%%~A"=="" (
             set "blacklisted_psn=%%~A"
             set "blacklisted_ip=%%~B"
-            set "blacklisted_psn_disp=!blacklisted_psn:~0,16!"
+            set "blacklisted_psn_padding=!blacklisted_psn:~0,16!"
             if not "%%~B"=="" (
-                set "blacklisted_ip_disp=!blacklisted_ip:~0,15!"
+                set "blacklisted_ip_padding=!blacklisted_ip:~0,15!"
             )
-            <nul set /p="Processing blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] ...                              !\R!"
+            <nul set /p="Processing blacklisted entry [!blacklisted_psn_padding!=!blacklisted_ip_padding!] ...                               !\R!"
             call :ASCII_TO_HEXADECIMAL || (
-                set /a "blacklisted_psn_invalid_%%~A=1", invalid_result_found=1
-                <nul set /p="Blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] does not contain a valid PSN username."
+                set /a blacklisted_invalid_psn=1, blacklisted_invalid_found=1
+                <nul set /p="Blacklisted entry [!blacklisted_psn_padding!=!blacklisted_ip_padding!] does not contain a valid PSN username."
                 echo:
             )
             if not "%%~B"=="" (
                 call :CHECK_IP blacklisted_ip || (
-                    set /a "blacklisted_ip_invalid_%%~A=1", invalid_result_found=1
-                    <nul set /p="Blacklisted entry [!blacklisted_psn_disp!=!blacklisted_ip_disp!] does not contain a valid IP address."
+                    set /a blacklisted_invalid_ip=1, blacklisted_invalid_found=1
+                    <nul set /p="Blacklisted entry [!blacklisted_psn_padding!=!blacklisted_ip_padding!] does not contain a valid IP address."
                     echo:
                 )
             )
         )
     )
-    if defined invalid_result_found (
-        set invalid_result_found=
-    ) else (
+    if not defined blacklisted_invalid_found (
         <nul set /p=".!\B!                                                                   "
     )
     for %%A in (
-        "blacklisted_psn"
-        "blacklisted_psn_disp"
-        "blacklisted_ip"
-        "blacklisted_ip_disp"
+        blacklisted_psn
+        blacklisted_psn_padding
+        blacklisted_ip
+        blacklisted_ip_padding
+        blacklisted_invalid_found
     ) do (
-        set %%~A=
+        set %%A=
     )
 ) else (
     call :CREATE_WINDOWS_BLACKLIST_FILE
     goto :LOOP_BLACKLIST_FILE_EMPTY
 )
 echo:
->nul 2>&1 set blacklisted_psn_invalid_ && (
+if defined blacklisted_invalid_psn (
     <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
     echo:
-    echo Unable to perform the username search for this entrie^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
-    echo Please ensure the username is correct, and check for the following errors:
+    echo Unable to perform the PSN username search for this entrie^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
+    echo Please ensure the PSN username is correct, and check for the following errors:
     echo PSN usernames must consist of 3-16 characters, and only contain: [a-z] [A-Z] [0-9] [-] [_]
     <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
     echo:
     echo:
+    set blacklisted_invalid_psn=
 )
->nul 2>&1 set blacklisted_ip_invalid_ && (
+if defined blacklisted_invalid_ip (
     <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
     echo:
-    echo Unable to perform the username search for this entrie^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
-    echo Please ensure the IP Address is correct, and check for the following errors:
+    echo Unable to perform the IP adress search for this entrie^(s^) in your 'WINDOWS_BLACKLIST_PATH' setting.
+    echo Please ensure the IP address is correct, and check for the following errors:
     echo The IP address must be composed of 4 octets of a number from 0 to 255 each separated by a dot.
     <nul set /p="^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^"
     echo:
     echo:
+    set blacklisted_invalid_ip=
 )
 :WAIT_FILE_SAVED_WINDOWS_BLACKLIST_PATH
 >nul 2>&1 set blacklisted_psn_hexadecimal_ || (
-    if defined notepad_pid (
-        tasklist /fo csv /fi "pid eq !notepad_pid!" | >nul find /i """notepad.exe""" || (
-            set notepad_pid=
+    if defined pid_notepad (
+        2>nul tasklist /nh /fo csv /fi "pid eq !pid_notepad!" | >nul find /i """notepad.exe""" || (
+            set pid_notepad=
         )
     )
-    if not defined notepad_pid (
+    if not defined pid_notepad (
         %@MSGBOX% "!TITLE! could not find any valid users in your 'WINDOWS_BLACKLIST_PATH' setting.!\N!!\N!Add your first entry to start scanning." 69648 "!TITLE_VERSION!"
-        start "" "notepad.exe" "!WINDOWS_BLACKLIST_PATH!"
-        for /f "tokens=2delims=," %%A in ('tasklist /fo csv /fi "imagename eq notepad.exe" ^| find /i """notepad.exe"""') do (
-            set "notepad_pid=%%~A"
+        notepad.exe "!WINDOWS_BLACKLIST_PATH!" && (
+            >nul timeout /t 1 /nobreak
+        )
+        for /f "tokens=2delims=," %%A in ('2^>nul tasklist /nh /fo csv /fi "imagename eq notepad.exe" ^| find /i """notepad.exe"""') do (
+            set "pid_notepad=%%~A"
         )
     )
     if exist "!WINDOWS_BLACKLIST_PATH!" (
@@ -1307,7 +1310,7 @@ call :GET_WINDOWS_TSHARK_PATH && (
 %@MSGBOX% "!TITLE! could not find your 'WINDOWS_TSHARK_PATH' setting on your system.!\N!!\N!Redirecting you to Wireshark download page.!\N!!\N!You can also define your own PATH in the 'Settings.ini' file." 69648 "!TITLE_VERSION!"
 start "" "https://www.wireshark.org/#download"
 if exist "Settings.ini" (
-    start "" "Settings.ini"
+    notepad.exe "Settings.ini"
 )
 exit /b 1
 
