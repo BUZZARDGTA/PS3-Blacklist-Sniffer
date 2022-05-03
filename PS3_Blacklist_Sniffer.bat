@@ -48,7 +48,7 @@ for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo(0x08"') do (
 set @MSGBOX=(if not exist "lib\msgbox.vbs" call :MSGBOX_GENERATION)^& cscript //nologo "lib\msgbox.vbs"
 set @MSGBOX_B=(if not exist "lib\msgbox.vbs" call :MSGBOX_GENERATION)^& start /b cscript //nologo "lib\msgbox.vbs"
 set @TIMER_T1=for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "?_t1=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100"
-set @TIMER_T2=for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "?_t2=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100, ?_tDiff=?_t2-?_t1, ?_tDiff+=((~(?_tDiff&(1<<31))>>31)+1)*8640000, ?_seconds=?_tDiff/100"
+set @TIMER_T2=for /f "tokens=1-4delims=:.," %%A in ("!time: =0!") do set /a "t2=(((1%%A*60)+1%%B)*60+1%%C)*100+1%%D-36610100, tDiff=t2-?_t1, tDiff+=((~(tDiff&(1<<31))>>31)+1)*8640000, ?_seconds=tDiff/100"
 setlocal EnableDelayedExpansion
 set @LOOKUP_PSN_LENGTH=`136`1160`
 set @LOOKUP_IPLOOKUP_FIELDS=`status`message`continent`continentCode`country`countryCode`region`regionName`city`district`zip`lat`lon`timezone`offset`currency`isp`org`as`asname`reverse`mobile`proxy`hosting`query`proxy_2`type`
@@ -76,7 +76,7 @@ if defined VERSION (
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.2.0 - 25/04/2022
+set VERSION=v2.2.1 - 03/05/2022
 set TITLE=PS3 Blacklist Sniffer
 set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE_VERSION!
@@ -527,10 +527,10 @@ if !PS3_IP_AND_MAC_ADDRESS_AUTOMATIC!==true (
         )
     )
     for %%A in (
-        "search_ps3_ip_address"
-        "first_2"
-        "x1"
-        "x2"
+        search_ps3_ip_address
+        first_2
+        x1
+        x2
     ) do (
         set %%~A=
     )
@@ -681,13 +681,13 @@ for /l %%? in () do (
     if exist "!WINDOWS_TSHARK_PATH!" (
         if exist "!WINDOWS_BLACKLIST_PATH!" (
             for %%A in (
-                "blacklisted_found_"
-                "skip_static_"
-                "skip_lookup_"
-                "skip_dynamic_"
-                "skip_ps3_protection"
+                blacklisted_found_
+                skip_static_
+                skip_lookup_
+                skip_dynamic_
+                skip_ps3_protection
             ) do (
-                for /f "delims==" %%B in ('2^>nul set %%~A') do (
+                for /f "delims==" %%B in ('2^>nul set %%A') do (
                     set "%%~B="
                 )
             )
@@ -700,35 +700,19 @@ for /l %%? in () do (
                 )
             )
             for /f "tokens=1-8" %%A in ('^"%@WINDOWS_TSHARK_STDERR%"!WINDOWS_TSHARK_PATH!" -q -Q -i !CAPTURE_INTERFACE! -f "!CAPTURE_FILTER!" -Y "frame.len^>^=68 and frame.len^<^=1160" -Tfields -Eseparator^=/s -e ip.src_host -e ip.src -e udp.srcport -e ip.dst_host -e ip.dst -e udp.dstport -e data -e frame.len -a duration:1^"') do (
-                if not "%%~A"=="" (
-                    if not "%%~B"=="" (
-                        if not "%%~C"=="" (
-                            if not "%%~D"=="" (
-                                if not "%%~E"=="" (
-                                    if not "%%~F"=="" (
-                                        if not "%%~G"=="" (
-                                            if not "%%~H"=="" (
-                                                set "hexadecimal_packet=%%~G"
-                                                set "frame_len=%%~H"
-                                                if defined local_ip_%%~B (
-                                                    set "reverse_ip=%%~D"
-                                                    set "ip=%%~E"
-                                                    set "port=%%~F"
-                                                    set "way=src"
-                                                    call :BLACKLIST_SEARCH
-                                                ) else (
-                                                    set "reverse_ip=%%~A"
-                                                    set "ip=%%~B"
-                                                    set "port=%%~C"
-                                                    set "way=dst"
-                                                    call :BLACKLIST_SEARCH
-                                                )
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        )
+                if not "%%~A%%~B%%~C%%~D%%~E%%~F%%~G%%~H"=="" (
+                    set "hexadecimal_packet=%%~G"
+                    set "frame_len=%%~H"
+                    if defined local_ip_%%~B (
+                        set "reverse_ip=%%~D"
+                        set "ip=%%~E"
+                        set "port=%%~F"
+                        call :BLACKLIST_SEARCH src
+                    ) else (
+                        set "reverse_ip=%%~A"
+                        set "ip=%%~B"
+                        set "port=%%~C"
+                        call :BLACKLIST_SEARCH dst
                     )
                 )
             )
@@ -790,7 +774,7 @@ if not defined skip_lookup_%ip% (
         if not "!hexadecimal_packet:FF83FFFEFFFE=!"=="!hexadecimal_packet!" (
             if not "!hexadecimal_packet:707333=!"=="!hexadecimal_packet!" (
                 set "psn_hexadecimal=!hexadecimal_packet:*FF83FFFEFFFE=!"
-                if !way!==src (
+                if %1==src (
                     set "psn_hexadecimal=!psn_hexadecimal:~72,32!"
                 ) else (
                     set "psn_hexadecimal=!psn_hexadecimal:~8,32!"
