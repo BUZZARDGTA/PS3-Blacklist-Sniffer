@@ -43,6 +43,8 @@
 @Simi - Helped me for some English translations.<br />
 [@Grub4K](https://github.com/Grub4K) - Creator of the timer algorithm.<br />
 [@Grub4K](https://github.com/Grub4K) - Creator of the the ending newline detection algorithm.<br />
+[@Grub4K](https://github.com/Grub4K) - Helped me improving the hexadecimal algorithms.<br />
+[@Grub4K](https://github.com/Grub4K) - Helped me improving the updater algorithm.<br />
 [@Grub4K](https://github.com/Grub4K) - Quick analysis of the source code to improve it.<br />
 [@Grub4K](https://github.com/Grub4K) and [@sintrode](https://github.com/sintrode) - Helped me understand the Windows 7 (x86) `find.exe` command bug with the 65001 codepage.<br />
 [@Grub4K](https://github.com/Grub4K) and [@sintrode](https://github.com/sintrode) - Helped me solving and understanding a Batch bug with `for` loop variables.<br />
