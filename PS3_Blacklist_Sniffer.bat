@@ -23,6 +23,7 @@
 ::     @Grub4K - Creator of the timer algorithm.
 ::     @Grub4K - Creator of the the ending newline detection algorithm.
 ::     @Grub4K - Helped me improving the hexadecimal algorithms.
+::     @Grub4K - Helped me improving the updater algorithm.
 ::     @Grub4K - Quick analysis of the source code to improve it.
 ::     @Grub4K and @Sintrode
 ::     Helped me understand the Windows 7 (x86)
@@ -63,23 +64,13 @@ if defined ProgramFiles(x86) (
 ) else (
     set "PATH=!PATH!;lib\curl\x86"
 )
-if "%~nx0"=="[UPDATED]_PS3_Blacklist_Sniffer.bat" (
-    for /f "tokens=2delims=," %%A in ('2^>nul tasklist /v /nh /fo csv /fi "imagename eq cmd.exe" ^| findstr /rxc:".*,\".*!TITLE!.*\""') do (
-        >nul 2>&1 taskkill /f /pid "%%~A" /t
-    )
-    >nul move /y "%~nx0" "PS3_Blacklist_Sniffer.bat" && (
-        start "" "PS3_Blacklist_Sniffer.bat" && (
-            exit 0
-        )
-    )
-)
 if defined VERSION (
     set OLD_VERSION=!VERSION!
 )
 if defined last_version (
     set OLD_LAST_VERSION=!last_version!
 )
-set VERSION=v2.2.2 - 12/05/2022
+set VERSION=v2.2.3 - 18/05/2022
 set TITLE=PS3 Blacklist Sniffer
 set TITLE_VERSION=PS3 Blacklist Sniffer !VERSION:~0,6!
 title !TITLE_VERSION!
@@ -97,7 +88,13 @@ if not "!WINDOWS_VERSION!"=="10.0" (
 >nul chcp 65001
 echo:
 echo Searching for a new update ...
-call :UPDATER
+call :UPDATER || (
+    echo ERROR: Failed updating. Try updating manually:
+    echo https://github.com/Illegal-Services/PS3-Blacklist-Sniffer
+    echo:
+    <nul set /p=Press {ANY KEY} to continue ...
+    >nul pause
+)
 >nul 2>&1 sc query npcap || (
     >nul 2>&1 sc query npf || (
         %@MSGBOX% "!TITLE! could not detect the 'Npcap' or 'WinpCap' driver installed on your system.!\N!!\N!Redirecting you to Npcap download page." 69648 "!TITLE_VERSION!"
@@ -125,6 +122,7 @@ for %%A in (
     "@PS3_IP_ADDRESS"
     "@PS3_MAC_ADDRESS"
     "@PS3_NOTIFICATIONS_ABOVE_SOUND"
+    "last_version"
     "generate_new_settings_file"
     "pid_notepad"
     "ps3_connected_notification"
@@ -1764,44 +1762,54 @@ for /f "delims=" %%A in ('curl.exe -fks "https://raw.githubusercontent.com/Illeg
 )
 :JUMP_3
 if not defined last_version (
-    exit /b
+    exit /b 1
 )
 if "!VERSION:~1,5!" geq "!last_version:~1,5!" (
-    exit /b
+    exit /b 0
 )
 if defined OLD_VERSION (
     if defined OLD_LAST_VERSION (
         if "!OLD_VERSION!"=="!VERSION!" (
             if "!OLD_LAST_VERSION!"=="!last_version!" (
-                exit /b
+                exit /b 0
             )
         )
     )
 )
->"lib\msgbox_updater.vbs" (
-    echo Dim Response
-    echo Response=MsgBox^(WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)^)
-    echo If Response=vbYes then
-    echo wscript.quit 6
-    echo End If
-    echo wscript.quit 7
-) || (
-    call :ERROR_FATAL WRITING_FAILURE "lib\msgbox_updater.vbs"
+for %%A in ("lib\msgbox_updater.vbs") do (
+    if not exist "%%~dpA" (
+        md "%%~dpA" || (
+            call :ERROR_FATAL WRITING_FAILURE "%%~dpA"
+        )
+    )
+    >"%%~A" (
+        echo Dim Response
+        echo Response=MsgBox^(WScript.Arguments^(0^),WScript.Arguments^(1^),WScript.Arguments^(2^)^)
+        echo If Response=vbYes then
+        echo wscript.quit 6
+        echo End If
+        echo wscript.quit 7
+    ) || (
+        call :ERROR_FATAL WRITING_FAILURE "%%~A"
+    )
 )
 cscript //nologo "lib\msgbox_updater.vbs" "New version found. Do you want to update ?!\N!!\N!Current version: !VERSION!!\N!Latest version   : !last_version!" 69668 "!TITLE_VERSION! Updater"
 if not !errorlevel!==6 (
-    exit /b
+    exit /b 0
 )
-curl.exe --create-dirs -f#ko "[UPDATED]_PS3_Blacklist_Sniffer.bat" "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/main/PS3_Blacklist_Sniffer.bat" || (
-    exit /b
+if exist "[UPDATED]_PS3_Blacklist_Sniffer.bat" (
+    del /f /q /a "[UPDATED]_PS3_Blacklist_Sniffer.bat" || (
+        exit /b 1
+    )
 )
-if not exist "[UPDATED]_PS3_Blacklist_Sniffer.bat" (
-    exit /b
+curl.exe -f#ko "[UPDATED]_PS3_Blacklist_Sniffer.bat" "https://raw.githubusercontent.com/Illegal-Services/PS3-Blacklist-Sniffer/main/PS3_Blacklist_Sniffer.bat" && (
+    >nul move /y "[UPDATED]_PS3_Blacklist_Sniffer.bat" "%~f0" && (
+        call "%~f0" && (
+            exit 0
+        )
+    )
 )
-start "" "[UPDATED]_PS3_Blacklist_Sniffer.bat" && (
-    exit 0
-)
-exit /b
+exit /b 1
 
 :ERROR_FATAL
 if "%~1"=="WRITING_FAILURE" (
